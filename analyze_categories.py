@@ -13,6 +13,7 @@ Prediction files must cover the whole test split (preds_<dataset>.json). Models 
 import argparse, collections, json
 from pathlib import Path
 from ldred import ner_datasets as D
+from compare_ner import sample_indices
 
 
 def text(doc, a, b):
@@ -29,6 +30,8 @@ def main():
     ap.add_argument("--system", action="append", required=True)
     ap.add_argument("--datasets", default="fewnerd,wnut17,tweetner7"); ap.add_argument("--out")
     ap.add_argument("--min-count", type=int, default=15, help="hide categories with fewer gold mentions")
+    ap.add_argument("--sample-from", help="metrics.json of the LLM run: restrict every system to the sentences the LLM saw "
+                    "(then systems with full-test predictions are subsetted and the LLM can be included)")
     a = ap.parse_args()
     systems = [s.split("=", 1) for s in a.system]
     md = []
@@ -36,13 +39,22 @@ def main():
         cross = D.is_cross(name)
         docs = D.load(name, a.b2nerd_dir if cross else a.data_dir, "test")
         targets = D.target_types(name)
+        idx = None
+        if a.sample_from:
+            meta = json.load(open(a.sample_from))["args"]
+            idx = sample_indices(len(docs), meta["eval_limit"], meta["seed"])
         preds = {}
         for label, folder in systems:
             p = Path(folder) / f"preds_{name}.json"
             if p.exists():
                 x = [{tuple(s) for s in doc} for doc in json.load(open(p))]
-                if len(x) == len(docs):
-                    preds[label] = D.to_org_scale(x) if cross else x
+                if idx is not None and len(x) == len(docs):
+                    x = [x[i] for i in idx]
+                elif len(x) != len(docs if idx is None else idx):
+                    continue
+                preds[label] = D.to_org_scale(x) if cross else x
+        if idx is not None:
+            docs = [docs[i] for i in idx]
         if not preds:
             continue
         md.append(f"# {name}\n")

@@ -16,6 +16,7 @@ Per dataset (test split, full-set prediction files preds_<dataset>.json) and per
 import argparse, collections, json, random
 from pathlib import Path
 from ldred import ner_datasets as D
+from compare_ner import sample_indices
 
 TYPES = ("COMP", "PROD")
 
@@ -58,6 +59,7 @@ def main():
     ap = argparse.ArgumentParser(); ap.add_argument("data_dir")
     ap.add_argument("--system", action="append", required=True, help='"label=folder" with full-test preds_<dataset>.json')
     ap.add_argument("--datasets", default="fewnerd,wnut17,tweetner7"); ap.add_argument("--out")
+    ap.add_argument("--sample-from", help="metrics.json of the LLM run: restrict every system to the sentences the LLM saw")
     ap.add_argument("--examples", type=int, default=4); ap.add_argument("--seed", type=int, default=13)
     a = ap.parse_args()
     systems = [s.split("=", 1) for s in a.system]
@@ -65,13 +67,22 @@ def main():
     for name in a.datasets.split(","):
         test, train = D.load(name, a.data_dir, "test"), D.load(name, a.data_dir, "train")
         seen = string_labels(train)
+        idx = None
+        if a.sample_from:
+            meta = json.load(open(a.sample_from))["args"]
+            idx = sample_indices(len(test), meta["eval_limit"], meta["seed"])
         preds = {}
         for label, folder in systems:
             p = Path(folder) / f"preds_{name}.json"
             if p.exists():
                 x = [{tuple(s) for s in doc} for doc in json.load(open(p))]
-                if len(x) == len(test):
-                    preds[label] = x
+                if idx is not None and len(x) == len(test):
+                    x = [x[i] for i in idx]
+                elif len(x) != len(test if idx is None else idx):
+                    continue
+                preds[label] = x
+        if idx is not None:
+            test = [test[i] for i in idx]
         md.append(f"# {name}")
         for T in TYPES:
             gold = [(i, a_, b_) for i, d in enumerate(test) for a_, b_, t in mentions(d) if t == T]
