@@ -100,7 +100,8 @@ def train_and_predict(train_docs, dev_docs, model_name, out_dir, epochs=5, lr=5e
     except TypeError:
         tok = AutoTokenizer.from_pretrained(model_name)
     model = AutoModelForTokenClassification.from_pretrained(
-        model_name, num_labels=len(labels), id2label=dict(enumerate(labels)), label2id=l2i).to(dev_)
+        model_name, num_labels=len(labels), id2label=dict(enumerate(labels)), label2id=l2i)
+    model = model.float().to(dev_)      # some checkpoints (DeBERTa-v3) are stored in fp16; AMP needs fp32 master weights
     cls_id = tok.cls_token_id if tok.cls_token_id is not None else tok.bos_token_id
     sep_id = tok.sep_token_id if tok.sep_token_id is not None else tok.eos_token_id
     pad_id = tok.pad_token_id or 0
