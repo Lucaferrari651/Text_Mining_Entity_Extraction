@@ -16,6 +16,10 @@ then try other methods.
 Linked-DocRED (https://github.com/alteca/Linked-DocRED): `git clone` it next to this repo; it is not
 committed here. Folder used by the scripts: `Linked-DocRED/Linked-DocRED`.
 
+Extra datasets with explicit company/product types: Few-NERD (`organization-company`, `product-*`), WNUT-17 and
+TweetNER7 (`corporation`, `product`). `ldred/ner_datasets.py` loads the jsonl dumps and maps them to PER / COMP / PROD /
+OTHER (see RUN.md for how they were downloaded and for the training commands in `ner_unified.py`).
+
 ## Run
 See [RUN.md](RUN.md). Baseline on dev, offline: `python3 run_baseline.py Linked-DocRED/Linked-DocRED`.
 Tests: `python3 -m pytest -q tests`.

@@ -8,19 +8,25 @@ def prf(tp, n_pred, n_gold):
     return p, r, (2 * p * r / (p + r) if p + r else 0.0)
 
 
-def ner_f1(gold_docs, pred_spans):
+def ner_f1(gold_docs, pred_spans, types=None):
     """Mention level, exact boundaries + type. pred_spans[i] = set of (sent, start, end, type) for doc i.
-    Returns {type: (P, R, F1)} plus 'ALL' (micro)."""
+    Returns {type: (P, R, F1)} plus 'ALL' (micro). With `types`, 'ALL' only counts those types."""
     c = defaultdict(lambda: [0, 0, 0])     # tp, pred, gold
     for doc, pred in zip(gold_docs, pred_spans):
         gold = {(m["sent_id"], m["pos"][0], m["pos"][1], e["type"])
                 for e in doc["entities"] for m in e["mentions"]}
         for s in gold:
-            c[s[3]][2] += 1; c["ALL"][2] += 1
+            c[s[3]][2] += 1
+            if types is None or s[3] in types:
+                c["ALL"][2] += 1
         for s in pred:
-            c[s[3]][1] += 1; c["ALL"][1] += 1
+            c[s[3]][1] += 1
+            if types is None or s[3] in types:
+                c["ALL"][1] += 1
             if s in gold:
-                c[s[3]][0] += 1; c["ALL"][0] += 1
+                c[s[3]][0] += 1
+                if types is None or s[3] in types:
+                    c["ALL"][0] += 1
     return {t: prf(*v) for t, v in c.items()}
 
 

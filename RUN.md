@@ -55,3 +55,19 @@ and writes `ner_roberta/preds_dev.json`. Download that file, then use it in the 
 python3 run_baseline.py Linked-DocRED/Linked-DocRED --ner-preds ner_roberta/preds_dev.json
 python3 run_wiki_eval.py Linked-DocRED/Linked-DocRED --cache wiki_cache_dev.json --ner-preds ner_roberta/preds_dev.json
 ```
+
+
+## Person / company / product on Few-NERD, WNUT-17, TweetNER7 (Colab, GPU)
+Unified labels: PER, COMP (company), PROD (product), OTHER. The headline number is the micro F1 over PER+COMP+PROD.
+Put the `.jsonl` files made by the dataset-download cell in `ner_data/` (the folder is git-ignored), then:
+```python
+!pip install -q transformers
+# quick check (a few minutes)
+!python ner_unified.py ner_data --train fewnerd --eval wnut17 --train-limit 2000 --eval-limit 300 --epochs 1 --out u_quick
+# train on Few-NERD, test on all three (transfer to the two tweet sets)
+!python ner_unified.py ner_data --train fewnerd --eval fewnerd,wnut17,tweetner7 --model roberta-base --epochs 3 --out u_fewnerd_roberta
+# train on the tweet sets, test on Few-NERD and WNUT-17
+!python ner_unified.py ner_data --train wnut17,tweetner7 --eval fewnerd,wnut17 --epochs 5 --out u_tweets_roberta
+```
+Results are in `<out>/metrics.json` (per type) and `<out>/preds_<set>.json`. Other encoders: `--model microsoft/deberta-v3-base`
+(see `--help`; `--seed` changes the seed, run 3 seeds for the report).

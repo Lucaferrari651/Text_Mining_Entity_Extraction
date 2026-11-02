@@ -7,8 +7,13 @@ Everything except `train_and_predict` is pure Python (no torch), so it can be un
 """
 from .data import TYPES, bio_tags, decode_bio
 
-LABELS = ["O"] + [f"{p}-{t}" for t in TYPES for p in ("B", "I")]
-L2I = {l: i for i, l in enumerate(LABELS)}
+def make_labels(types):
+    """BIO label list (and label -> id) for a list of entity types."""
+    labels = ["O"] + [f"{p}-{t}" for t in types for p in ("B", "I")]
+    return labels, {l: i for i, l in enumerate(labels)}
+
+
+LABELS, L2I = make_labels(TYPES)       # Linked-DocRED types, kept as the default
 IGNORE = -100
 
 
@@ -21,8 +26,8 @@ def doc_words(doc):
     return words, sid, pos
 
 
-def doc_labels(doc):
-    return [L2I[t] for sent in bio_tags(doc) for t in sent]
+def doc_labels(doc, l2i=L2I):
+    return [l2i[t] for sent in bio_tags(doc) for t in sent]
 
 
 def word_pieces(tokenizer, words):
@@ -78,13 +83,16 @@ def words_to_sentence_tags(doc, word_tags):
 
 
 def train_and_predict(train_docs, dev_docs, model_name, out_dir, epochs=5, lr=5e-5, batch_size=8, max_len=512,
-                      overlap=128, seed=13, log=print, eval_fn=None):
-    """Fine-tune `model_name` on train_docs; return predicted span sets for dev_docs (one set per document)."""
+                      overlap=128, seed=13, log=print, eval_fn=None, types=None, eval_sets=None):
+    """Fine-tune `model_name` on train_docs; return predicted span sets for dev_docs (one set per document).
+    `types` = entity types to tag (default: the 6 Linked-DocRED types).
+    `eval_sets` = {name: docs}: if given, return {name: predicted span sets} for each set instead (dev_docs may be [])."""""
     import random
     import numpy as np
     import torch
     from transformers import AutoModelForTokenClassification, AutoTokenizer, get_linear_schedule_with_warmup
 
+    labels, l2i = (LABELS, L2I) if types is None else make_labels(types)
     random.seed(seed); np.random.seed(seed); torch.manual_seed(seed)
     dev_ = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     try:
@@ -92,14 +100,14 @@ def train_and_predict(train_docs, dev_docs, model_name, out_dir, epochs=5, lr=5e
     except TypeError:
         tok = AutoTokenizer.from_pretrained(model_name)
     model = AutoModelForTokenClassification.from_pretrained(
-        model_name, num_labels=len(LABELS), id2label=dict(enumerate(LABELS)), label2id=L2I).to(dev_)
+        model_name, num_labels=len(labels), id2label=dict(enumerate(labels)), label2id=l2i).to(dev_)
     cls_id = tok.cls_token_id if tok.cls_token_id is not None else tok.bos_token_id
     sep_id = tok.sep_token_id if tok.sep_token_id is not None else tok.eos_token_id
     pad_id = tok.pad_token_id or 0
 
     def encode(doc, with_labels):
         words, _, _ = doc_words(doc)
-        ids, first, widx, lab = flatten(word_pieces(tok, words), doc_labels(doc) if with_labels else None)
+        ids, first, widx, lab = flatten(word_pieces(tok, words), doc_labels(doc, l2i) if with_labels else None)
         return ids, first, widx, lab
 
     def batchify(seqs):
@@ -140,7 +148,7 @@ def train_and_predict(train_docs, dev_docs, model_name, out_dir, epochs=5, lr=5e
                 if first[p]:
                     w = best[p]; s0 = wins[w][0]
                     lg = logits[w // batch_size][w % batch_size, 1 + p - s0]
-                    tags[widx[p]] = LABELS[int(lg.argmax())]
+                    tags[widx[p]] = labels[int(lg.argmax())]
             out.append(words_to_sentence_tags(doc, tags))
         model.train(); return out
 
@@ -158,7 +166,7 @@ def train_and_predict(train_docs, dev_docs, model_name, out_dir, epochs=5, lr=5e
         if eval_fn is not None:
             msg += f"  dev mention F1 {eval_fn(predict(dev_docs)):.4f}"
         log(msg)
-    preds = predict(dev_docs)
+    preds = {k: predict(v) for k, v in eval_sets.items()} if eval_sets is not None else predict(dev_docs)
     if out_dir:
         model.save_pretrained(out_dir); tok.save_pretrained(out_dir)
     return preds

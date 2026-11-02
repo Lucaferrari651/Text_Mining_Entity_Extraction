@@ -13,3 +13,5 @@ results/crf.pkl
 # trained model weights
 ner_*/model/
 **/model/
+ner_data/
+u_*/
