@@ -1,0 +1,17 @@
+coref  singletons                         B3 P=1.000 R=0.731 F1=0.845 | entity F1=0.665
+coref  exact                              B3 P=0.998 R=0.881 F1=0.936 | entity F1=0.834
+coref  exact+subset(PER)                  B3 P=0.997 R=0.905 F1=0.949 | entity F1=0.867
+coref  exact+subset(PER,ORG)              B3 P=0.993 R=0.912 F1=0.951 | entity F1=0.871
+coref  exact+subset(PER,ORG,LOC,MISC)     B3 P=0.976 R=0.921 F1=0.948 | entity F1=0.861
+link   prior (exact alias)          hit@1=0.280 hit@5=0.309 not_found=0.689 mean_rank_found=1.178 mrr=0.293  (0s)
+link   prior + fuzzy char-3gram     hit@1=0.289 hit@5=0.323 not_found=0.674 mean_rank_found=1.211 mrr=0.305  (38s)
+CRF trained in 130s
+ner    ALL   P=0.778 R=0.764 F1=0.771
+ner    LOC   P=0.792 R=0.837 F1=0.814
+ner    MISC  P=0.586 R=0.514 F1=0.548
+ner    NUM   P=0.841 R=0.839 F1=0.840
+ner    ORG   P=0.703 R=0.608 F1=0.652
+ner    PER   P=0.792 R=0.822 F1=0.807
+ner    TIME  P=0.937 R=0.921 F1=0.929
+pipeline entity F1 (NER+coref, exact entities) P=0.621 R=0.698 F1=0.657
+end-to-end: 3046/13856 gold linkable entities recovered AND linked at rank 1 = 0.220
