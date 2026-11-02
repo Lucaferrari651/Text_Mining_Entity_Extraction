@@ -44,3 +44,28 @@ def test_wiki_parsers_and_ranksum():
     # Y is rank 1 for "a" and rank 0 for "b" -> score 1 ; X: 0 + (2+1)=3 ; Z: (2+1) + 1 = 4
     assert rank_entity_ranksum(["a", "b"], idx) == ["Y", "X", "Z"]
     assert merge_ranked(["A", "B"], ["B", "C"]) == ["A", "B", "C"]
+
+
+def test_windows_cover_everything_and_pick_central_window():
+    from ldred.ner_transformer import make_windows, best_window
+    assert make_windows(10, 512) == [(0, 10)]
+    w = make_windows(1000, 512, overlap=128)
+    assert w[0][0] == 0 and w[-1][1] == 1000 and all(e - s <= 510 for s, e in w)
+    assert all(a[1] > b[0] for a, b in zip(w, w[1:]))                    # consecutive windows overlap
+    covered = {p for s, e in w for p in range(s, e)}; assert covered == set(range(1000))
+    best = best_window(w, 1000)
+    assert best[0] == 0 and best[999] == len(w) - 1
+
+
+def test_flatten_labels_on_first_subword_only():
+    from ldred.ner_transformer import flatten, IGNORE, L2I
+    ids, first, widx, lab = flatten([[5], [6, 7, 8], [9]], [L2I["B-PER"], L2I["O"], L2I["B-LOC"]])
+    assert ids == [5, 6, 7, 8, 9] and first == [True, True, False, False, True]
+    assert widx == [0, 1, 1, 1, 2] and lab == [L2I["B-PER"], 0, IGNORE, IGNORE, L2I["B-LOC"]]
+
+
+def test_words_to_sentence_tags_does_not_cross_sentences():
+    from ldred.ner_transformer import words_to_sentence_tags
+    doc = {"sents": [["a", "b"], ["c", "d"]]}
+    got = words_to_sentence_tags(doc, ["B-PER", "I-PER", "I-PER", "O"])      # I-PER at start of sentence 2
+    assert got == {(0, 0, 2, "PER"), (1, 0, 1, "PER")}

@@ -38,4 +38,20 @@ It prints Hit@1 / Hit@5 / Not found / Mean rank / MRR for Wikipedia vs Wikidata 
 rank-sum vs our probability-sum, and the combination with the alias dictionary, first on gold entities
 (part A), then on the entities our own pipeline predicts (part B). Results go to `results/wiki_metrics.json`.
 
-Then tell Claude when `wiki_cache_dev.json` exists so the evaluation can also be run there.
+
+## Transformer mention detector (Colab, GPU)
+In Google Colab choose Runtime > Change runtime type > T4 GPU, then in a cell:
+```python
+!git clone https://github.com/Lucaferrari651/Text_Mining_Entity_Extraction
+%cd Text_Mining_Entity_Extraction
+!git clone https://github.com/alteca/Linked-DocRED
+!pip install -q transformers scikit-learn sklearn-crfsuite
+!python ner_transformer.py Linked-DocRED/Linked-DocRED --model roberta-base --epochs 5 --out ner_roberta
+```
+Quick check first: add `--limit-docs 50 --epochs 1`. For the model used in the paper's baseline add
+`--model allenai/longformer-base-4096 --max-len 4096 --batch-size 2`. It prints mention F1 per epoch and per type,
+and writes `ner_roberta/preds_dev.json`. Download that file, then use it in the pipeline instead of the CRF:
+```bash
+python3 run_baseline.py Linked-DocRED/Linked-DocRED --ner-preds ner_roberta/preds_dev.json
+python3 run_wiki_eval.py Linked-DocRED/Linked-DocRED --cache wiki_cache_dev.json --ner-preds ner_roberta/preds_dev.json
+```

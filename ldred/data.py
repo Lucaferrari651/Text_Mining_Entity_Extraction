@@ -59,3 +59,8 @@ def wikidata_target(entity):
     if entity["type"] in NOT_LINKABLE:
         return None
     return entity["entity_linking"].get("wikidata_resource") or None
+
+
+def load_ner_preds(path):
+    """preds_dev.json written by ner_transformer.py -> list (one per document) of sets of (sent, start, end, type)."""
+    return [{(s, a, b, t) for s, a, b, t in doc} for doc in json.loads(Path(path).read_text(encoding="utf-8"))]

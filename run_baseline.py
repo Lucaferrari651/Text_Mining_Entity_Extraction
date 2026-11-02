@@ -9,7 +9,9 @@ from ldred.coref import cluster
 from ldred.linking import PriorIndex, FuzzyIndex, rank_entity
 
 ap = argparse.ArgumentParser(); ap.add_argument("data_dir"); ap.add_argument("--skip-ner", action="store_true")
-ap.add_argument("--out", default="results"); a = ap.parse_args()
+ap.add_argument("--out", default="results")
+ap.add_argument("--ner-preds", help="preds_dev.json from ner_transformer.py instead of the CRF")
+a = ap.parse_args()
 out = Path(a.out); out.mkdir(exist_ok=True)
 train, dev = load_split(a.data_dir, "train"), load_split(a.data_dir, "dev")
 res = {}
@@ -48,13 +50,17 @@ for name, idx in [("prior (exact alias)", prior), ("prior + fuzzy char-3gram", f
 
 # ---- stage 1: NER, then full pipeline on PREDICTED mentions
 if not a.skip_ner:
-    pk = out / "crf.pkl"
-    if pk.exists():
-        tagger = pickle.load(open(pk, "rb"))
+    if a.ner_preds:
+        from ldred.data import load_ner_preds
+        pred = load_ner_preds(a.ner_preds)
     else:
-        t0 = time.time(); tagger = CRFTagger().fit(train); print(f"CRF trained in {time.time()-t0:.0f}s")
-        pickle.dump(tagger, open(pk, "wb"))
-    pred = [tagger.predict_doc(d) for d in dev]
+        pk = out / "crf.pkl"
+        if pk.exists():
+            tagger = pickle.load(open(pk, "rb"))
+        else:
+            t0 = time.time(); tagger = CRFTagger().fit(train); print(f"CRF trained in {time.time()-t0:.0f}s")
+            pickle.dump(tagger, open(pk, "wb"))
+        pred = [tagger.predict_doc(d) for d in dev]
     ner = M.ner_f1(dev, pred); res["ner_crf"] = ner
     for t, (p, r, f) in sorted(ner.items()): print(f"ner    {t:5s} P={p:.3f} R={r:.3f} F1={f:.3f}")
     pred_ent = [cluster(d, sp, ("PER",)) for d, sp in zip(dev, pred)]

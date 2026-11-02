@@ -9,3 +9,7 @@ CrossNER/
 wiki_cache*.json
 results/crf.pkl
 *.pkl
+
+# trained model weights
+ner_*/model/
+**/model/

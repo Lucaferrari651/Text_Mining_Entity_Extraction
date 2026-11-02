@@ -15,7 +15,9 @@ from ldred.coref import cluster
 from ldred.linking import (PriorIndex, FuzzyIndex, CacheIndex, rank_entity, rank_entity_ranksum, merge_ranked)
 
 ap = argparse.ArgumentParser(); ap.add_argument("data_dir"); ap.add_argument("--cache", required=True)
-ap.add_argument("--out", default="results"); a = ap.parse_args()
+ap.add_argument("--out", default="results")
+ap.add_argument("--ner-preds", help="preds_dev.json from ner_transformer.py (default: train/use the CRF)")
+a = ap.parse_args()
 cache = json.loads(Path(a.cache).read_text(encoding="utf-8"))
 train, dev = load_split(a.data_dir, "train"), load_split(a.data_dir, "dev")
 fuzzy = FuzzyIndex(PriorIndex().fit(train))
@@ -42,13 +44,18 @@ for name, (fn, tgt) in methods.items():
 
 # ---- Part B: predicted entities. Credit = the predicted entity is exactly a gold entity AND linked right,
 #      plus a softer variant: each gold entity is matched to the predicted entity sharing most mentions.
-pk = Path(a.out) / "crf.pkl"
-if pk.exists():
-    tagger = pickle.load(open(pk, "rb"))
-else:                                           # train the CRF mention detector (about 2-4 minutes)
-    from ldred.ner_crf import CRFTagger
-    Path(a.out).mkdir(exist_ok=True); tagger = CRFTagger().fit(train); pickle.dump(tagger, open(pk, "wb"))
-pred = [(d, cluster(d, tagger.predict_doc(d), ("PER",))) for d in dev]
+if a.ner_preds:
+    from ldred.data import load_ner_preds
+    ner_spans = load_ner_preds(a.ner_preds)
+else:
+    pk = Path(a.out) / "crf.pkl"
+    if pk.exists():
+        tagger = pickle.load(open(pk, "rb"))
+    else:                                       # train the CRF mention detector (about 2-4 minutes)
+        from ldred.ner_crf import CRFTagger
+        Path(a.out).mkdir(exist_ok=True); tagger = CRFTagger().fit(train); pickle.dump(tagger, open(pk, "wb"))
+    ner_spans = [tagger.predict_doc(d) for d in dev]
+pred = [(d, cluster(d, sp, ("PER",))) for d, sp in zip(dev, ner_spans)]
 for name, (fn, tgt) in methods.items():
     ranked, targets = [], []
     for d, ents_pred in pred:
