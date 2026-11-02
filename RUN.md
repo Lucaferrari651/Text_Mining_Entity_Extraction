@@ -82,3 +82,15 @@ The labels "person", "company", "product" are given to the model as text; same d
 ```
 Results: `g_zero/metrics.json`, `g_zero/preds_<set>.json`. `--labels person,organization,product` tries another wording for
 the company label; `--threshold` defaults to 0.5 (fixed in advance, not tuned on the test sets).
+
+
+## Few-shot LLM baseline (Cloudflare Workers AI; run on your Mac or Colab, the sandbox cannot reach the API)
+Needs a free Cloudflare account, its Account ID and an API token with Workers AI permission (never commit them):
+```bash
+export CF_ACCOUNT_ID=...  CF_API_TOKEN=...
+python3 llm_eval.py ner_data --eval wnut17 --eval-limit 50 --out l_quick                  # small test, shows the Neuron cost
+python3 llm_eval.py ner_data --eval fewnerd,wnut17,tweetner7 --eval-limit 300 --out l_llama8b
+```
+A fixed random sample of `--eval-limit` sentences per dataset is used (one API call each). Answers are cached in `<out>/cache.jsonl`;
+if the free daily limit (10,000 Neurons) stops the run, run it again the next day and it continues from the cache.
+Colab: `!pip install -q requests`, set the two variables with `os.environ[...] = ...` in a cell (do not save the notebook with the token visible).
