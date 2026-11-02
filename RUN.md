@@ -105,3 +105,18 @@ python3 compare_ner.py ner_data --sample-from l_llama8b/metrics.json \
   --system "RoBERTa (Few-NERD)=u_fewnerd_roberta" --out comparison
 ```
 Each folder needs `preds_<dataset>.json`. Systems without a given dataset are skipped.
+
+## CrossNER (test-only benchmark, from the B2NERD English release)
+CrossNER (AI, literature, music, politics, science) has persons, **organizations** (not companies) and, only in the AI subset, products,
+so it is scored as PER / ORG / PROD. The five sets are named `crossner_ai`, `crossner_literature`, `crossner_music`,
+`crossner_politics`, `crossner_science`; `--b2nerd-dir` points at the `NER_en` folder of the B2NERD download.
+```bash
+# zero-shot GLiNER (labels person / organization / product), threshold chosen on the validation sets of the other benchmarks
+python3 gliner_eval.py ner_data --b2nerd-dir b2nerd/NER_en --threshold 0.8 --out g_cross \
+  --eval crossner_ai,crossner_literature,crossner_music,crossner_politics,crossner_science
+# a trained model (training uses only the three company/product datasets; its COMP predictions are scored as ORG)
+python3 ner_unified.py ner_data --b2nerd-dir b2nerd/NER_en --train fewnerd --model roberta-base --epochs 3 --out u_fewnerd_cross \
+  --eval crossner_ai,crossner_literature,crossner_music,crossner_politics,crossner_science
+```
+Read the numbers with care: PROD exists only in `crossner_ai` (197 test mentions), the other four sets have none, so their PROD column
+is meaningless; and a model trained on "company" can only recover part of CrossNER's broader "organization" type (low ORG recall).

@@ -25,12 +25,14 @@ ap.add_argument("--lr", type=float, default=3e-5); ap.add_argument("--batch-size
 ap.add_argument("--max-len", type=int, default=128); ap.add_argument("--seed", type=int, default=13)
 ap.add_argument("--train-limit", type=int, help="max sentences per training dataset")
 ap.add_argument("--eval-limit", type=int, help="max sentences per evaluation dataset")
+ap.add_argument("--b2nerd-dir", help="B2NERD NER_en folder; needed to evaluate on crossner_ai,crossner_literature,crossner_music,"
+                "crossner_politics,crossner_science (scored as PER/ORG/PROD, our COMP predictions count as ORG)")
 ap.add_argument("--out", default="u_out"); ap.add_argument("--save-model", action="store_true")
 a = ap.parse_args()
 
 train = [d for n in a.train.split(",") for d in D.load(n, a.data_dir, "train", a.train_limit)]
 dev = D.load(a.train.split(",")[0], a.data_dir, "validation", 1000)      # only for the per-epoch printout
-ev = {n: D.load(n, a.data_dir, a.eval_split, a.eval_limit) for n in a.eval.split(",")}
+ev = {n: D.load(n, a.b2nerd_dir if D.is_cross(n) else a.data_dir, a.eval_split, a.eval_limit) for n in a.eval.split(",")}
 print("train", len(train), D.stats(train), flush=True)
 out = Path(a.out); out.mkdir(parents=True, exist_ok=True)
 f1 = lambda preds: M.ner_f1(dev, preds, D.TARGET)["ALL"][2]
@@ -39,9 +41,11 @@ preds = train_and_predict(train, dev, a.model, str(out / "model") if a.save_mode
                           types=D.UNIFIED, eval_sets=ev)
 res = {}
 for name, docs in ev.items():
-    r = M.ner_f1(docs, preds[name], D.TARGET)
+    cross = D.is_cross(name)
+    scored = D.to_org_scale(preds[name]) if cross else preds[name]
+    r = M.ner_f1(docs, scored, D.target_types(name))
     res[name] = {t: list(v) for t, v in r.items()}
-    line = "  ".join(f"{t} F1={r[t][2]:.3f}" for t in D.UNIFIED if t in r)
-    print(f"{name:10s} [{a.eval_split}] PER+COMP+PROD micro P={r['ALL'][0]:.3f} R={r['ALL'][1]:.3f} F1={r['ALL'][2]:.3f} | {line}")
+    line = "  ".join(f"{t} F1={r[t][2]:.3f}" for t in (D.CROSS_TARGET if cross else D.UNIFIED) if t in r)
+    print(f"{name:10s} [{a.eval_split}] {'PER+ORG+PROD' if cross else 'PER+COMP+PROD'} micro P={r['ALL'][0]:.3f} R={r['ALL'][1]:.3f} F1={r['ALL'][2]:.3f} | {line}")
     json.dump([sorted(map(list, p)) for p in preds[name]], open(out / f"preds_{name}.json", "w"))
 json.dump({"args": vars(a), "results": res}, open(out / "metrics.json", "w"), indent=1)

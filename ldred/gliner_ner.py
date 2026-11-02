@@ -8,6 +8,7 @@ rarely). Everything except `predict_docs` is pure Python and unit-tested without
 
 # text label given to the model -> unified type
 DEFAULT_LABELS = {"person": "PER", "company": "COMP", "product": "PROD"}
+CROSSNER_LABELS = {"person": "PER", "organization": "ORG", "product": "PROD"}     # CrossNER has organizations, not companies
 
 
 def tokens_to_text(tokens):

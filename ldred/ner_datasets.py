@@ -99,9 +99,56 @@ def load_fewnerd(data_dir, split):
 
 LOADERS = {"wnut17": load_wnut17, "tweetner7": load_tweetner7, "fewnerd": load_fewnerd}
 
+# --- CrossNER (from the B2NERD English release): test-only benchmark with PER / ORG / PROD ------------------------------
+# CrossNER has a generic "organization" type, not "company", so its types are scored as PER / ORG / PROD (see `to_org_scale`).
+CROSSNER = {"crossner_ai": "CrossNER_AI", "crossner_literature": "CrossNER_literature", "crossner_music": "CrossNER_music",
+            "crossner_politics": "CrossNER_politics", "crossner_science": "CrossNER_science"}
+CROSS_TARGET = ["PER", "ORG", "PROD"]
+
+
+def unify_b2(raw_type):
+    """B2NERD type name ('person -> researcher', 'organization -> university', 'product name', ...) -> PER / ORG / PROD / OTHER."""
+    head = raw_type.split(" ->")[0].strip()
+    return {"person": "PER", "organization": "ORG", "product name": "PROD"}.get(head, "OTHER")
+
+
+def load_crossner(name, b2_dir, split):
+    """One document per sentence. B2NERD sentences are space-separated tokens with character offsets; an entity that does not
+    start and end on a token boundary (2 of 27,000) is skipped."""
+    path = Path(b2_dir) / CROSSNER[name] / f"{'dev' if split == 'validation' else split}.json"
+    docs = []
+    for k, r in enumerate(json.load(open(path, encoding="utf-8"))):
+        tokens, starts, ends, pos = r["sentence"].split(" "), {}, {}, 0
+        for i, t in enumerate(tokens):
+            starts[pos], ends[pos + len(t)] = i, i + 1
+            pos += len(t) + 1
+        ents = []
+        for e in r["entities"]:
+            a, b = e["pos"]
+            if a in starts and b in ends:
+                ents.append({"id": len(ents), "type": unify_b2(e["type"]), "raw_type": e["type"],
+                             "mentions": [{"sent_id": 0, "pos": [starts[a], ends[b]]}]})
+        docs.append({"title": str(k), "sents": [tokens], "entities": ents})
+    return docs
+
+
+def is_cross(name):
+    return name in CROSSNER
+
+
+def target_types(name):
+    return CROSS_TARGET if is_cross(name) else TARGET
+
+
+def to_org_scale(preds):
+    """Predictions of a model trained with COMP -> ORG, so company predictions are scored against CrossNER's organizations
+    (a company is an organization; the reverse does not hold, so recall on ORG is expected to be low for such models)."""
+    return [{(s, a, b, "ORG" if t == "COMP" else t) for s, a, b, t in p} for p in preds]
+
 
 def load(name, data_dir, split, limit=None):
-    docs = LOADERS[name](data_dir, split)
+    """`data_dir` is the jsonl folder for wnut17 / tweetner7 / fewnerd and the B2NERD `NER_en` folder for crossner_*."""
+    docs = load_crossner(name, data_dir, split) if is_cross(name) else LOADERS[name](data_dir, split)
     return docs[:limit] if limit else docs
 
 
@@ -110,5 +157,5 @@ def stats(docs):
     c = {t: 0 for t in UNIFIED}
     for d in docs:
         for e in d["entities"]:
-            c[e["type"]] += len(e["mentions"])
+            c[e["type"]] = c.get(e["type"], 0) + len(e["mentions"])
     return c
