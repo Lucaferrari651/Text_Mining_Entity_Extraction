@@ -71,3 +71,14 @@ Put the `.jsonl` files made by the dataset-download cell in `ner_data/` (the fol
 ```
 Results are in `<out>/metrics.json` (per type) and `<out>/preds_<set>.json`. Other encoders: `--model microsoft/deberta-v3-base`
 (see `--help`; `--seed` changes the seed, run 3 seeds for the report).
+
+
+## GLiNER, zero-shot (Colab, GPU; no training)
+The labels "person", "company", "product" are given to the model as text; same data and metric as `ner_unified.py`.
+```python
+!pip install -q gliner
+!python gliner_eval.py ner_data --eval wnut17,tweetner7,fewnerd --model urchade/gliner_multi-v2.1 --out g_zero
+# quick check: --eval wnut17 --eval-limit 200
+```
+Results: `g_zero/metrics.json`, `g_zero/preds_<set>.json`. `--labels person,organization,product` tries another wording for
+the company label; `--threshold` defaults to 0.5 (fixed in advance, not tuned on the test sets).
