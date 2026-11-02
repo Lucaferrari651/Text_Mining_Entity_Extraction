@@ -94,3 +94,14 @@ python3 llm_eval.py ner_data --eval fewnerd,wnut17,tweetner7 --eval-limit 300 --
 A fixed random sample of `--eval-limit` sentences per dataset is used (one API call each). Answers are cached in `<out>/cache.jsonl`;
 if the free daily limit (10,000 Neurons) stops the run, run it again the next day and it continues from the cache.
 Colab: `!pip install -q requests`, set the two variables with `os.environ[...] = ...` in a cell (do not save the notebook with the token visible).
+
+## Comparing systems on the same sentences (no GPU, no network)
+`llm_eval.py` scores a random sample (seed 13), GLiNER / RoBERTa score the full test sets. `compare_ner.py` rebuilds the LLM's
+sample from its `metrics.json` and scores every system on exactly those sentences (and on the full set where available), then
+shows what happened to each gold COMPANY / PRODUCT mention (found / other type / other boundaries / missed):
+```bash
+python3 compare_ner.py ner_data --sample-from l_llama8b/metrics.json \
+  --system "LLM 8B=l_llama8b" --system "GLiNER 0.5=g_zero" --system "GLiNER 0.8=g_zero_t08" \
+  --system "RoBERTa (Few-NERD)=u_fewnerd_roberta" --out comparison
+```
+Each folder needs `preds_<dataset>.json`. Systems without a given dataset are skipped.
