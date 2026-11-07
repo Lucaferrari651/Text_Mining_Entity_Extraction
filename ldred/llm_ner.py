@@ -19,6 +19,27 @@ INSTRUCTION = (
     "Do not extract places, groups, bands, teams, creative works, events or generic nouns.")
 
 
+# Longer annotation guidelines, written from the public annotation schemes of the datasets (WNUT-17, TweetNER7, Few-NERD) before any
+# run of this prompt, and not changed afterwards. Same output format as INSTRUCTION. Used by `--prompt guide` / `guide+shots`.
+GUIDELINE = (
+    "Given a sentence, extract all entity mentions of the three types below. Each mention must be an exact copy of a text span "
+    "of the sentence. Give one line per mention in the form `- mention | TYPE`. If there is none, answer `None`.\n\n"
+    "Annotation guidelines (follow them closely):\n\n"
+    "PER: a named person, real or fictional, including nicknames, stage names, and the handles or usernames of individual people. "
+    "Not a title or role alone (\"the president\"), not a group of people.\n\n"
+    "COMP: a named company, i.e. a business that sells goods or services (airlines, banks, retailers, manufacturers, tech firms, "
+    "restaurant chains), including short forms, abbreviations and the handles of a company's account. Not governments or agencies, "
+    "universities, hospitals, political parties, sports teams or leagues, bands, charities or other non-commercial groups, and not "
+    "the products a company sells.\n\n"
+    "PROD: a named product or service made or sold by a company: devices, vehicles, software and apps, video games, weapons, ships, "
+    "aircraft, food and drink brands, named services. Not films, books, songs, TV shows or other creative works, not generic words "
+    "(\"phone\", \"car\") and not the company itself.\n\n"
+    "General rules: decide company or product from the sense in the sentence (a name used for the firm is COMP, the same name used for "
+    "the thing that is sold is PROD). Extract the name only, without determiners or descriptions. Do not extract places, nationalities, "
+    "events, dates, numbers or generic nouns.")
+PROMPTS = {"shots": INSTRUCTION, "guide": GUIDELINE, "guide+shots": GUIDELINE}      # name -> system message; "guide" uses no examples
+
+
 def fmt_answer(doc):
     rows = []
     for e in doc["entities"]:
@@ -28,9 +49,9 @@ def fmt_answer(doc):
     return "\n".join(rows) if rows else "None"
 
 
-def build_messages(doc, shots):
+def build_messages(doc, shots, system=INSTRUCTION):
     """Chat messages: system instruction, then each example as a user/assistant pair, then the test sentence."""
-    msgs = [{"role": "system", "content": INSTRUCTION}]
+    msgs = [{"role": "system", "content": system}]
     for s in shots:
         msgs += [{"role": "user", "content": "Sentence: " + " ".join(s["sents"][0])},
                  {"role": "assistant", "content": fmt_answer(s)}]
@@ -118,11 +139,11 @@ class CloudflareChat:
         raise RuntimeError("Cloudflare: too many retries")
 
 
-def predict_docs(chat, docs, shots, model_name, cache, log=print):
+def predict_docs(chat, docs, shots, model_name, cache, log=print, system=INSTRUCTION):
     """One predicted span set per sentence. `chat(messages) -> str`."""
     out = []
     for n, doc in enumerate(docs):
-        msgs = build_messages(doc, shots)
+        msgs = build_messages(doc, shots, system)
         k = Cache.key(model_name, msgs)
         ans = cache.get(k)
         if ans is None:

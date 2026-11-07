@@ -143,3 +143,36 @@ the dictionary's gain should shrink. This is a hypothesis, not yet tested (it ne
 wrong company. This is a likely explanation of the drops with relabelling on Few-NERD; it has not been checked case by case.
 
 Limits: one dictionary setting (Company class only), one prediction file per model, single run.
+
+## 6. Does detection get worse when the sentence has few entities? (idea from the information-density paper)
+
+`analyze_density.py`: density of a test sentence = gold entity tokens (all types) / tokens; sentences with at least one person, company or product are
+split into three equal groups (low / middle / high), and sentences with none are kept apart because only false positives can happen there.
+Full test sets, RoBERTa trained on Few-NERD and GLiNER 0.8 (recall of gold mentions with exact span and type; FP = false positives per 100 sentences).
+
+| Dataset | Group | RoBERTa recall all / COMP | RoBERTa FP | GLiNER recall all / COMP | GLiNER FP |
+|---|---|---|---|---|---|
+| Few-NERD | no target entity | - | 7.2 | - | 30.1 |
+| Few-NERD | low density | 84% / 66% | 19.7 | 65% / 70% | 36.5 |
+| Few-NERD | middle density | 85% / 72% | 24.8 | 64% / 67% | 41.0 |
+| Few-NERD | high density | 85% / 69% | 31.4 | 66% / 59% | 46.3 |
+| WNUT-17 | no target entity | - | 10.7 | - | 19.1 |
+| WNUT-17 | low density | 48% / 15% | 23.5 | 36% / 30% | 16.7 |
+| WNUT-17 | middle density | 52% / 5% | 19.7 | 43% / 29% | 16.3 |
+| WNUT-17 | high density | 40% / 4% | 34.2 | 41% / 32% | 30.3 |
+| TweetNER7 | no target entity | - | 11.6 | - | 57.1 |
+| TweetNER7 | low density | 18% / 2% | 17.3 | 45% / 27% | 38.0 |
+| TweetNER7 | middle density | 27% / 6% | 22.6 | 43% / 20% | 31.8 |
+| TweetNER7 | high density | 30% / 4% | 33.1 | 41% / 18% | 42.4 |
+
+(The full tables with person and product recall, sentence counts and the 800-sentence version with the 8B LLM are produced by the script.)
+
+**Reading.** The paper's pattern (worse in sparse text) does not show up here. Recall is flat in Few-NERD, goes up with density for RoBERTa on tweets
+(18% to 30%; but that model fails on the `{@handle@}` markup, and denser sentences are shorter, so length and markup are mixed in), and falls with
+density for GLiNER's company recall (70% to 59% on Few-NERD, 27% to 18% on TweetNER7). Two things are clear instead:
+- **False positives rise with density** for every system (more entities, more chances to mark a wrong span).
+- **GLiNER fires on sentences with nothing to find**: 30 false positives per 100 sentences on Few-NERD and 57 on TweetNER7 where the gold has no person, company
+  or product, against 7 and 12 for RoBERTa. On the 800-sentence sample the 8B LLM does the same (55 and 60 per 100 sentences on Few-NERD and TweetNER7).
+This is a different question from the paper's: the paper trains on WNUT-17 subsets of different density, while we measure how already-trained or zero-shot
+systems behave on test sentences of different density, so we do not test the paper's claim about training data. Few-NERD and TweetNER7 sentences with no
+target entity are 56% and 21% of the test sets, so this false-positive rate matters for precision.

@@ -136,3 +136,18 @@ python3 analyze_gazetteer.py ner_data --names dbpedia_companies.txt --datasets f
 ```
 `--stoplist` never accepts one-token matches of words that are almost never entities in the training split (the, good, who).
 Few-NERD is built from Wikipedia, so its DBpedia coverage is optimistic; the tweet datasets are the fair test.
+
+## Guideline prompt for the LLM, and recall by sentence density
+`llm_eval.py --prompt` chooses the system message: `shots` (default, short type list plus 6 examples), `guide` (written annotation guidelines,
+no examples) or `guide+shots`. The guideline text is `GUIDELINE` in `ldred/llm_ner.py`; it was written from the datasets' public annotation
+schemes before any run and is not tuned on the test sentences. Use the same sample (`--eval-limit`, seed 13) as the run you compare with:
+```bash
+python3 llm_eval.py ner_data --eval fewnerd,wnut17,tweetner7 --eval-limit 300 --out l_llama8b_300            # baseline prompt, same 300 sentences
+python3 llm_eval.py ner_data --eval fewnerd,wnut17,tweetner7 --eval-limit 300 --prompt guide --out l_guide
+python3 llm_eval.py ner_data --eval fewnerd,wnut17,tweetner7 --eval-limit 300 --prompt guide+shots --out l_guide_shots
+```
+`analyze_density.py` splits the test sentences by gold entity density (entity tokens / tokens) and reports recall and false positives per group:
+```bash
+python3 analyze_density.py ner_data --system "RoBERTa=u_fewnerd_roberta" --system "GLiNER 0.8=g_zero_t08" --out density.md
+python3 analyze_density.py ner_data --sample-from l_llama8b/metrics.json --system "LLM 8B=l_llama8b" --system "RoBERTa=u_fewnerd_roberta" --system "GLiNER 0.8=g_zero_t08" --out density_800.md
+```

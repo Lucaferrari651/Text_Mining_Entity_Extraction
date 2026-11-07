@@ -47,3 +47,14 @@ def test_pick_shots_mix():
     neg = [mk(["x", "y"], []) for _ in range(10)]
     shots = pick_shots(pos + neg, 6)
     assert len(shots) == 6 and sum(1 for s in shots if not s["entities"]) == 2
+
+
+def test_prompt_variants_keep_default_cache_keys():
+    from ldred.llm_ner import PROMPTS, INSTRUCTION, GUIDELINE
+    test = mk(["Nothing", "here"], [])
+    assert build_messages(test, [])[0]["content"] == INSTRUCTION                  # default unchanged, old caches still valid
+    g = build_messages(test, [], PROMPTS["guide"])
+    assert g[0]["content"] == GUIDELINE and len(g) == 2
+    assert Cache.key("m", g) != Cache.key("m", build_messages(test, []))
+    assert "`- mention | TYPE`" in GUIDELINE and all(t in GUIDELINE for t in ("PER", "COMP", "PROD"))
+    assert PROMPTS["guide"] is PROMPTS["guide+shots"]
