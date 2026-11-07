@@ -53,3 +53,93 @@ tweets. Product written as a handle is found by almost nobody (GLiNER 0.5: 2%).
 3. Train or fine-tune on tweet data (RoBERTa on tweets; GLiNER fine-tuning); the partner's tweet-trained run is not in yet.
 4. Tune the GLiNER threshold per type; 0.5 gives more recall and 0.8 more precision.
 5. Report relaxed-boundary F1 next to exact-match F1 to separate boundary errors from real misses.
+
+## 5. Company dictionary (DBpedia), suggested by the professor
+
+Dictionary: English labels of DBpedia's `Company` class plus the labels of pages that redirect to it (117,440 names; 128,471 normalised
+entries after adding versions without legal suffixes such as "Inc."). Matching is longest-match on tokens, lower-cased, with Twitter markup
+removed; one-word matches must be capitalised and are never accepted for words that are almost never entities in the training split.
+Code: `fetch_dbpedia_companies.py`, `ldred/gazetteer.py`, `analyze_gazetteer.py`. Few-NERD comes from Wikipedia, so its coverage is optimistic.
+
+**Coverage and dictionary-only baseline** (test sets)
+
+| Dataset | gold COMP in dictionary | gold PROD in the company list | dictionary-only COMP F1 |
+|---|---|---|---|
+| Few-NERD | 39% (n=3903) | 4% | 0.142 |
+| WNUT-17 | 18% (n=66) | 7% | 0.100 |
+| TweetNER7 | 18% (n=1091) | 11% | 0.145 |
+
+Coverage is low even on Few-NERD. In a sample of uncovered gold companies the main reasons are abbreviations and short names (NBC, CVS, FBI, MLB),
+brands DBpedia probably does not type as Company (Reddit, Spotify, Mercedes, Viacom; not verified), sports and media organisations (Ohio State,
+Sky Sports), handle-style concatenations (CocaColaPH, FordPerformance) and annotation noise. Splitting camel-case names recovers only 3 of 1,091
+(TweetNER7) and 2 of 66 (WNUT-17) gold companies, so text cleaning is not what limits coverage. False matches come from generic one-word entries
+("House", "King", "World", "Night") and, with the legal-suffix variants, from names such as "Air Company" becoming "Air". Dropping the variants
+raises precision and lowers recall (company F1 0.12 vs 0.10 on WNUT-17, 0.14 vs 0.145 on TweetNER7, 0.21 vs 0.14 on Few-NERD): no clear winner.
+
+**Model + dictionary** (company P / R / F1 and PER+COMP+PROD micro F1)
+
+- `+ add`: add a company where a dictionary match overlaps no model prediction;
+- `+ add (multi-word only)`: the same, only for matches of two or more tokens;
+- `+ relabel only`: change a model span of another type to company when it is exactly a dictionary entry, adding nothing;
+- `+ add + relabel`: both.
+
+Few-NERD
+
+| System | COMP P | COMP R | COMP F1 | PER+COMP+PROD F1 |
+|---|---|---|---|---|
+| RoBERTa model | 0.667 | 0.695 | **0.680** | 0.835 |
+| RoBERTa + add | 0.465 | 0.698 | **0.558** | 0.812 |
+| RoBERTa + add (multi-word only) | 0.557 | 0.695 | **0.618** | 0.824 |
+| RoBERTa + relabel only | 0.429 | 0.734 | **0.541** | 0.798 |
+| RoBERTa + add + relabel | 0.340 | 0.738 | **0.465** | 0.777 |
+| GLiNER 0.8 model | 0.344 | 0.638 | **0.447** | 0.632 |
+| GLiNER 0.8 + add | 0.145 | 0.687 | **0.240** | 0.545 |
+| GLiNER 0.8 + add (multi-word only) | 0.289 | 0.661 | **0.402** | 0.618 |
+| GLiNER 0.8 + relabel only | 0.327 | 0.649 | **0.435** | 0.622 |
+| GLiNER 0.8 + add + relabel | 0.144 | 0.699 | **0.239** | 0.537 |
+
+WNUT-17
+
+| System | COMP P | COMP R | COMP F1 | PER+COMP+PROD F1 |
+|---|---|---|---|---|
+| RoBERTa model | 0.312 | 0.076 | **0.122** | 0.516 |
+| RoBERTa + add | 0.082 | 0.091 | **0.086** | 0.492 |
+| RoBERTa + add (multi-word only) | 0.172 | 0.076 | **0.105** | 0.510 |
+| RoBERTa + relabel only | 0.250 | 0.167 | **0.200** | 0.505 |
+| RoBERTa + add + relabel | 0.119 | 0.182 | **0.144** | 0.483 |
+| GLiNER 0.8 model | 0.267 | 0.303 | **0.284** | 0.446 |
+| GLiNER 0.8 + add | 0.134 | 0.348 | **0.193** | 0.416 |
+| GLiNER 0.8 + add (multi-word only) | 0.217 | 0.303 | **0.253** | 0.440 |
+| GLiNER 0.8 + relabel only | 0.250 | 0.318 | **0.280** | 0.439 |
+| GLiNER 0.8 + add + relabel | 0.133 | 0.364 | **0.194** | 0.409 |
+
+TweetNER7
+
+| System | COMP P | COMP R | COMP F1 | PER+COMP+PROD F1 |
+|---|---|---|---|---|
+| RoBERTa model | 0.417 | 0.039 | **0.072** | 0.375 |
+| RoBERTa + add | 0.200 | 0.143 | **0.167** | 0.371 |
+| RoBERTa + add (multi-word only) | 0.222 | 0.041 | **0.070** | 0.370 |
+| RoBERTa + relabel only | 0.287 | 0.075 | **0.119** | 0.370 |
+| RoBERTa + add + relabel | 0.203 | 0.179 | **0.190** | 0.367 |
+| GLiNER 0.8 model | 0.366 | 0.210 | **0.267** | 0.508 |
+| GLiNER 0.8 + add | 0.190 | 0.283 | **0.227** | 0.474 |
+| GLiNER 0.8 + add (multi-word only) | 0.309 | 0.214 | **0.253** | 0.502 |
+| GLiNER 0.8 + relabel only | 0.351 | 0.210 | **0.263** | 0.504 |
+| GLiNER 0.8 + add + relabel | 0.187 | 0.283 | **0.225** | 0.471 |
+
+**Reading.** The dictionary does not improve over the models. On Few-NERD every variant is worse than the model alone. For GLiNER the best
+variant at most ties the model on every dataset. The overall PER+COMP+PROD F1 never improves; the added company spans are mostly false
+positives. It helps only RoBERTa (trained on Few-NERD) on tweets and WNUT-17, where that model almost never predicts a company (recall 4% and 8%),
+and even then it stays below GLiNER alone (0.19 vs 0.27 on TweetNER7). WNUT-17 has only 66 gold companies, so a change of a few mentions moves F1 a lot.
+
+**Most of the gain on tweets is probably the markup problem.** 470 of the 1,091 gold companies in TweetNER7 are written as `{@name@}`, and RoBERTa
+finds only 43 of the 1,091. Of the 113 correct companies the dictionary adds for RoBERTa on TweetNER7, 100 are handle-markup strings. So the dictionary
+mostly compensates for the model not handling the markup. If the markup is normalised before the model sees it, RoBERTa should improve on its own and
+the dictionary's gain should shrink. This is a hypothesis, not yet tested (it needs a rerun on normalised tweets).
+
+**Why a dictionary cannot decide between company and product.** The same string can be a company in one sentence and a product in another
+("Etsy" and "Poshmark" are product in some gold tweets), and relabelling every exact match to company can turn a correct product prediction into a
+wrong company. This is a likely explanation of the drops with relabelling on Few-NERD; it has not been checked case by case.
+
+Limits: one dictionary setting (Company class only), one prediction file per model, single run.
