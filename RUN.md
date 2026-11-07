@@ -120,3 +120,19 @@ python3 ner_unified.py ner_data --b2nerd-dir b2nerd/NER_en --train fewnerd --mod
 ```
 Read the numbers with care: PROD exists only in `crossner_ai` (197 test mentions), the other four sets have none, so their PROD column
 is meaningless; and a model trained on "company" can only recover part of CrossNER's broader "organization" type (low ORG recall).
+
+## Company dictionary (DBpedia), suggested by the professor
+Step 1 needs internet (run it on your own machine or Colab; the sandbox cannot reach DBpedia). Either page the public SPARQL endpoint
+(about a few minutes to an hour; restartable) or read the DBpedia dump files (instance types + English labels, from databus.dbpedia.org):
+```bash
+python3 fetch_dbpedia_companies.py sparql --out dbpedia_companies.txt                      # add --classes Company,Organisation for CrossNER
+python3 fetch_dbpedia_companies.py dumps --types instance-types_lang=en_specific.ttl.bz2 --labels labels_lang=en.ttl.bz2 --out dbpedia_companies.txt
+```
+The SPARQL queries have been unit-tested as text only, not against the live endpoint, so expect to adjust them if DBpedia rejects one.
+Step 2 needs no model: coverage of gold company strings, a dictionary-only baseline, and (with saved predictions) model + dictionary:
+```bash
+python3 analyze_gazetteer.py ner_data --names dbpedia_companies.txt --datasets fewnerd,wnut17,tweetner7 --stoplist \
+  --system "RoBERTa=u_fewnerd_roberta" --system "GLiNER 0.8=g_zero_t08" --out gazetteer_analysis.md
+```
+`--stoplist` never accepts one-token matches of words that are almost never entities in the training split (the, good, who).
+Few-NERD is built from Wikipedia, so its DBpedia coverage is optimistic; the tweet datasets are the fair test.
