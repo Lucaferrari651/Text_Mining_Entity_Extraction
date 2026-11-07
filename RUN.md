@@ -151,3 +151,18 @@ python3 llm_eval.py ner_data --eval fewnerd,wnut17,tweetner7 --eval-limit 300 --
 python3 analyze_density.py ner_data --system "RoBERTa=u_fewnerd_roberta" --system "GLiNER 0.8=g_zero_t08" --out density.md
 python3 analyze_density.py ner_data --sample-from l_llama8b/metrics.json --system "LLM 8B=l_llama8b" --system "RoBERTa=u_fewnerd_roberta" --system "GLiNER 0.8=g_zero_t08" --out density_800.md
 ```
+
+## Supervised runs for the best score (Colab GPU)
+`ner_unified.py` trains on the training split(s) you list and scores the test split once at the end. `--keep-best` restores the epoch with the
+best validation F1 (validation of all training datasets), so nothing is selected on the test sets. Use a GPU runtime (T4 is enough for base models;
+for large models lower `--batch-size` to 16 if memory runs out).
+```bash
+# own-data models, one per dataset
+python3 ner_unified.py ner_data --train wnut17 --eval wnut17 --model roberta-large --epochs 10 --lr 2e-5 --batch-size 16 --keep-best --out s_wnut_rl
+python3 ner_unified.py ner_data --train fewnerd --eval fewnerd --model roberta-large --epochs 3 --lr 2e-5 --batch-size 16 --keep-best --out s_fewnerd_rl
+# one model trained on all three, scored on all three
+python3 ner_unified.py ner_data --train fewnerd,wnut17,tweetner7 --eval fewnerd,wnut17,tweetner7 --model roberta-large --epochs 3 --lr 2e-5 --batch-size 16 --keep-best --out s_all_rl
+# same with DeBERTa-v3-large for comparison
+python3 ner_unified.py ner_data --train fewnerd,wnut17,tweetner7 --eval fewnerd,wnut17,tweetner7 --model microsoft/deberta-v3-large --epochs 3 --lr 1e-5 --batch-size 16 --keep-best --out s_all_deb
+```
+Do a quick check first with `--train-limit 2000 --eval-limit 300 --epochs 1`. TweetNER7 alone is the partner's task.

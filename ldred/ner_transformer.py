@@ -83,10 +83,11 @@ def words_to_sentence_tags(doc, word_tags):
 
 
 def train_and_predict(train_docs, dev_docs, model_name, out_dir, epochs=5, lr=5e-5, batch_size=8, max_len=512,
-                      overlap=128, seed=13, log=print, eval_fn=None, types=None, eval_sets=None):
+                      overlap=128, seed=13, log=print, eval_fn=None, types=None, eval_sets=None, keep_best=False):
     """Fine-tune `model_name` on train_docs; return predicted span sets for dev_docs (one set per document).
     `types` = entity types to tag (default: the 6 Linked-DocRED types).
-    `eval_sets` = {name: docs}: if given, return {name: predicted span sets} for each set instead (dev_docs may be [])."""""
+    `eval_sets` = {name: docs}: if given, return {name: predicted span sets} for each set instead (dev_docs may be []).
+    `keep_best` (needs eval_fn): after training, restore the epoch with the best dev score (selection on the validation data only)."""
     import random
     import numpy as np
     import torch
@@ -154,6 +155,7 @@ def train_and_predict(train_docs, dev_docs, model_name, out_dir, epochs=5, lr=5e
         model.train(); return out
 
     model.train()
+    best_f1, best_state = -1.0, None
     for ep in range(epochs):
         random.shuffle(train_seqs); tot = 0.0
         for i in range(0, len(train_seqs), batch_size):
@@ -165,8 +167,14 @@ def train_and_predict(train_docs, dev_docs, model_name, out_dir, epochs=5, lr=5e
             scaler.step(opt); scaler.update(); sched.step(); tot += loss.item()
         msg = f"epoch {ep + 1}/{epochs}  train loss {tot / max(1, len(train_seqs) / batch_size):.4f}"
         if eval_fn is not None:
-            msg += f"  dev mention F1 {eval_fn(predict(dev_docs)):.4f}"
+            dev_f1 = eval_fn(predict(dev_docs))
+            msg += f"  dev mention F1 {dev_f1:.4f}"
+            if keep_best and dev_f1 > best_f1:
+                best_f1 = dev_f1; best_state = {k: v.detach().cpu().clone() for k, v in model.state_dict().items()}
+                msg += "  (best so far)"
         log(msg)
+    if keep_best and best_state is not None:
+        model.load_state_dict(best_state); log(f"restored best epoch (dev F1 {best_f1:.4f})")
     preds = {k: predict(v) for k, v in eval_sets.items()} if eval_sets is not None else predict(dev_docs)
     if out_dir:
         model.save_pretrained(out_dir); tok.save_pretrained(out_dir)

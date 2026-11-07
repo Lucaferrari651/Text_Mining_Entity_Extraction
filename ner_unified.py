@@ -27,17 +27,18 @@ ap.add_argument("--train-limit", type=int, help="max sentences per training data
 ap.add_argument("--eval-limit", type=int, help="max sentences per evaluation dataset")
 ap.add_argument("--b2nerd-dir", help="B2NERD NER_en folder; needed to evaluate on crossner_ai,crossner_literature,crossner_music,"
                 "crossner_politics,crossner_science (scored as PER/ORG/PROD, our COMP predictions count as ORG)")
+ap.add_argument("--keep-best", action="store_true", help="restore the epoch with the best validation F1 (validation of all training datasets)")
 ap.add_argument("--out", default="u_out"); ap.add_argument("--save-model", action="store_true")
 a = ap.parse_args()
 
 train = [d for n in a.train.split(",") for d in D.load(n, a.data_dir, "train", a.train_limit)]
-dev = D.load(a.train.split(",")[0], a.data_dir, "validation", 1000)      # only for the per-epoch printout
+dev = [d for n in a.train.split(",") for d in D.load(n, a.data_dir, "validation", 1000)]      # validation of every training set: per-epoch printout and --keep-best
 ev = {n: D.load(n, a.b2nerd_dir if D.is_cross(n) else a.data_dir, a.eval_split, a.eval_limit) for n in a.eval.split(",")}
 print("train", len(train), D.stats(train), flush=True)
 out = Path(a.out); out.mkdir(parents=True, exist_ok=True)
 f1 = lambda preds: M.ner_f1(dev, preds, D.TARGET)["ALL"][2]
 preds = train_and_predict(train, dev, a.model, str(out / "model") if a.save_model else None, a.epochs, a.lr,
-                          a.batch_size, a.max_len, 0, a.seed, eval_fn=f1, log=lambda s: print(s, flush=True),
+                          a.batch_size, a.max_len, 0, a.seed, eval_fn=f1, keep_best=a.keep_best, log=lambda s: print(s, flush=True),
                           types=D.UNIFIED, eval_sets=ev)
 res = {}
 for name, docs in ev.items():
