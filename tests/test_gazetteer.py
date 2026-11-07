@@ -78,3 +78,11 @@ def test_common_words_stoplist_blocks_one_token_matches():
     assert "the" in stop and "good" in stop and "apple" not in stop
     g = Gazetteer(["The", "Apple"])
     assert g.find("The Apple".split(), "capitalised", stop) == [(1, 2)]
+
+
+def test_hybrid_relabel_only_and_multiword_add():
+    g = Gazetteer(["Flybe", "Twin Galaxies"])
+    d = doc("Flybe and Twin Galaxies".split())
+    model = [{(0, 0, 1, "PROD")}]
+    assert hybrid(model, g, [d], "relabel_only") == [{(0, 0, 1, "COMP")}]          # relabel, nothing added
+    assert hybrid([set()], g, [d], "add", min_add_tokens=2) == [{(0, 2, 4, "COMP")}]   # one-word match not added

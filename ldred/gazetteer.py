@@ -104,11 +104,13 @@ def predict_docs(gaz, docs, single_word="any", label="COMP", stop=frozenset()):
     return [{(0, a, b, label) for a, b in gaz.find(d["sents"][0], single_word, stop)} for d in docs]
 
 
-def hybrid(model_preds, gaz, docs, mode="add", single_word="capitalised", stop=frozenset()):
+def hybrid(model_preds, gaz, docs, mode="add", single_word="capitalised", stop=frozenset(), min_add_tokens=1):
     """Combine model predictions with dictionary matches.
     mode 'add'     : add a COMP span where a dictionary match overlaps no model prediction;
     mode 'relabel' : additionally change a model span of another type to COMP when it is exactly a dictionary match;
-    mode 'both'    : same as 'relabel' (which already includes 'add')."""
+    mode 'both'    : same as 'relabel' (which already includes 'add');
+    mode 'relabel_only': never add spans, only relabel model spans that are exactly a dictionary entry.
+    min_add_tokens: dictionary matches shorter than this are never added (2 = multi-word names only, safer than one-word ones)."""
     out = []
     for pred, d in zip(model_preds, docs):
         pred = set(pred)
@@ -116,8 +118,9 @@ def hybrid(model_preds, gaz, docs, mode="add", single_word="capitalised", stop=f
             same = {p for p in pred if p[1] == a and p[2] == b}
             overlap = {p for p in pred if p[1] < b and p[2] > a}
             if not overlap:
-                pred.add((0, a, b, "COMP"))
-            elif mode in ("relabel", "both") and same and not any(p[3] == "COMP" for p in same):
+                if mode != "relabel_only" and b - a >= min_add_tokens:
+                    pred.add((0, a, b, "COMP"))
+            elif mode in ("relabel", "both", "relabel_only") and same and not any(p[3] == "COMP" for p in same):
                 pred -= same
                 pred.add((0, a, b, "COMP"))
         out.append(pred)

@@ -10,7 +10,7 @@ Per dataset (test split):
   B. Dictionary-only baseline for COMP (--stoplist drops one-token matches of common non-entity words): precision / recall / F1 with every match accepted ('any') and with single-word matches
      restricted to capitalised tokens ('capitalised'); most frequent false matches with their gold label.
   C. Hybrid (needs --system with full-test prediction files): model alone, + dictionary matches where the model predicted nothing
-     ('add'), + relabelling model spans that are exactly a dictionary entry to COMP ('relabel'). COMP F1 and the PER+COMP+PROD micro F1.
+     ('add'; also only multi-word matches), + relabelling model spans that are exactly a dictionary entry to COMP ('relabel'). COMP F1 and the PER+COMP+PROD micro F1.
 Note: Few-NERD is built from Wikipedia, so DBpedia coverage there is optimistic; the tweet datasets are the fair test.
 """
 import argparse, collections, json
@@ -106,6 +106,8 @@ def main():
             md.append("| System | COMP P | COMP R | COMP F1 | PER+COMP+PROD F1 |\n|---|---|---|---|---|")
             for label, P in base.items():
                 for variant, preds in [("model", P), ("+ add", G.hybrid(P, gaz, test, "add", stop=stop)),
+                                       ("+ add (multi-word only)", G.hybrid(P, gaz, test, "add", stop=stop, min_add_tokens=2)),
+                                       ("+ relabel only", G.hybrid(P, gaz, test, "relabel_only", stop=stop)),
                                        ("+ add + relabel", G.hybrid(P, gaz, test, "relabel", stop=stop))]:
                     r = M.ner_f1(test, preds, D.TARGET)
                     md.append(f"| {label} {variant} | {r['COMP'][0]:.3f} | {r['COMP'][1]:.3f} | **{r['COMP'][2]:.3f}** | {r['ALL'][2]:.3f} |")
