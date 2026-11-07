@@ -176,3 +176,50 @@ density for GLiNER's company recall (70% to 59% on Few-NERD, 27% to 18% on Tweet
 This is a different question from the paper's: the paper trains on WNUT-17 subsets of different density, while we measure how already-trained or zero-shot
 systems behave on test sentences of different density, so we do not test the paper's claim about training data. Few-NERD and TweetNER7 sentences with no
 target entity are 56% and 21% of the test sets, so this false-positive rate matters for precision.
+
+## 7. Written annotation guidelines in the LLM prompt (GuideNER idea)
+
+Llama 3.1 8B, same 300 sampled test sentences per dataset, one run each. `guide`: the system message is a written guideline (`GUIDELINE` in
+`ldred/llm_ner.py`; person / company / product definitions with explicit exclusions such as governments, universities, parties, sports teams, bands,
+creative works), no examples. `guide+shots`: the guideline plus the same 6 examples as the baseline. The guideline was written from the datasets' public
+annotation schemes before these runs, but after the error analyses above, so it is not independent of what we saw on the test data. Unlike GuideNER, it is
+written by hand, not derived from training data.
+
+| Dataset | Prompt | P | R | F1 | PER F1 | COMP F1 | PROD F1 |
+|---|---|---|---|---|---|---|---|
+| Few-NERD | 6 shots | 0.495 | 0.543 | **0.518** | 0.671 | 0.393 | 0.187 |
+| Few-NERD | guide | 0.314 | 0.704 | 0.434 | 0.598 | 0.263 | 0.218 |
+| Few-NERD | guide+shots | 0.446 | 0.479 | 0.462 | 0.593 | 0.367 | 0.200 |
+| WNUT-17 | 6 shots | 0.514 | 0.351 | **0.417** | 0.543 | 0.345 | 0.147 |
+| WNUT-17 | guide | 0.243 | 0.513 | 0.330 | 0.463 | 0.273 | 0.138 |
+| WNUT-17 | guide+shots | 0.558 | 0.312 | 0.400 | 0.513 | 0.176 | 0.200 |
+| TweetNER7 | 6 shots | 0.445 | 0.307 | **0.364** | 0.543 | 0.227 | 0.074 |
+| TweetNER7 | guide | 0.285 | 0.398 | 0.332 | 0.472 | 0.281 | 0.108 |
+| TweetNER7 | guide+shots | 0.506 | 0.284 | **0.364** | 0.534 | 0.241 | 0.070 |
+
+Gold company mentions found (exact span and type) / predicted companies that are wrong:
+
+| Dataset (gold COMP) | 6 shots | guide | guide+shots |
+|---|---|---|---|
+| Few-NERD (37) | 24 found / 61 wrong | 27 / 141 | 27 / 83 |
+| WNUT-17 (17) | 5 / 7 | 12 / 59 | 3 / 14 |
+| TweetNER7 (84) | 20 / 72 | 38 / 148 | 19 / 55 |
+
+Gold product mentions found / wrong predicted products:
+
+| Dataset (gold PROD) | 6 shots | guide | guide+shots |
+|---|---|---|---|
+| Few-NERD (37) | 10 / 60 | 21 / 135 | 10 / 53 |
+| WNUT-17 (33) | 5 / 30 | 10 / 102 | 5 / 12 |
+| TweetNER7 (116) | 7 / 66 | 16 / 165 | 6 / 50 |
+
+**Reading.**
+- The guideline does not improve overall F1: the 6-shot baseline is best or tied in every dataset.
+- Without examples, the guideline makes the model find more companies and products (companies found on TweetNER7 20 to 38, on WNUT-17 5 to 12; products found on
+  Few-NERD 10 to 21), but it also more than doubles the number of wrong company and product predictions, so precision collapses (Few-NERD 0.50 to 0.31).
+  The exclusion lists did not teach the model to stay quiet; it labels more things as company or product.
+- With examples added, the model falls back to roughly the baseline behaviour: no gain in found mentions, slightly fewer wrong predictions, and a small
+  loss of overall F1. The examples dominate the guideline.
+- The only company F1 gain is TweetNER7 with the guideline alone (0.227 to 0.281); the WNUT-17 company F1 of guide+shots (0.176) rests on 17 gold mentions.
+- Samples are small (17 to 116 gold mentions per type), single run, one hand-written guideline: differences of a few mentions are within noise.
+This agrees with the over-triggering found in section 6: the weakness of the small LLM is precision, and a text description alone does not fix it.
