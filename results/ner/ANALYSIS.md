@@ -223,3 +223,31 @@ Gold product mentions found / wrong predicted products:
 - The only company F1 gain is TweetNER7 with the guideline alone (0.227 to 0.281); the WNUT-17 company F1 of guide+shots (0.176) rests on 17 gold mentions.
 - Samples are small (17 to 116 gold mentions per type), single run, one hand-written guideline: differences of a few mentions are within noise.
 This agrees with the over-triggering found in section 6: the weakness of the small LLM is precision, and a text description alone does not fix it.
+
+## 8. Supervised RoBERTa-large (training on the dataset's own training split)
+
+Goal of this part: the highest score, so the model is trained on the dataset's own data (`ner_unified.py --keep-best`: the epoch with the best validation F1
+is restored; the test split is scored once). Unified labels PER / COMP / PROD / OTHER, same metric as before (mention-level, exact span and type).
+These are supervised results and are not directly comparable with the zero-shot and few-shot systems above.
+Numbers are copied from the console output of the Colab runs; the prediction files of these two runs were lost when the Colab runtime was reset, so
+no per-entity comparison is available for them.
+
+| Dataset | Training data | Setup | P | R | F1 | PER F1 | COMP F1 | PROD F1 |
+|---|---|---|---|---|---|---|---|---|
+| WNUT-17 | WNUT-17 train (3,394 sentences) | roberta-large, 10 epochs, lr 2e-5, batch 16, best epoch 10 (dev F1 0.697) | 0.700 | 0.582 | **0.636** | 0.740 | 0.496 | 0.262 |
+| Few-NERD | Few-NERD train (131,767 sentences) | roberta-large, 3 epochs, lr 2e-5, batch 16, best epoch 1 (dev F1 0.864) | 0.824 | 0.838 | **0.831** | 0.897 | 0.687 | 0.695 |
+
+Comparison on the same full test sets (all systems in sections above):
+
+| Dataset | RoBERTa-large own data | RoBERTa-base trained on all three | RoBERTa-base trained on Few-NERD | GLiNER 0.8 zero-shot | Llama 3.3 70B few-shot (300 sent.) |
+|---|---|---|---|---|---|
+| WNUT-17 | **0.636** | 0.564 | 0.516 | 0.446 | 0.620 |
+| Few-NERD | 0.831 | 0.834 | 0.835 | 0.632 | 0.636 |
+
+**Reading.**
+- On WNUT-17, training on the dataset's own data gives the best result so far (+0.07 over the base model trained on all three sets, +0.12 over the
+  Few-NERD model). Precision and recall both improve. The company F1 (0.496) is still below the 70B LLM (0.578, 300 sentences), and product F1 (0.262) is no better than the other systems.
+- On Few-NERD, the large model does not improve on the base model (0.831 vs 0.835); the best validation epoch was the first, and two more epochs did not help.
+  So Few-NERD seems saturated for this approach, and more model size or more epochs is not where the gain is.
+- Products remain the weakest type on WNUT-17; companies and products on Few-NERD stay near 0.69.
+- Not done: the run on all three datasets together and the TweetNER7 run, because the free Colab GPU quota ran out; WNUT-17 is a single run with 66 gold companies in the test set.
