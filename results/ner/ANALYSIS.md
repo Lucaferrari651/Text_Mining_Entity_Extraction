@@ -25,7 +25,7 @@ tweets. Product written as a handle is found by almost nobody (GLiNER 0.5: 2%).
 1. **Label definitions differ between datasets.** Few-NERD "company" does not include parties, bands or universities, which
    CrossNER calls organization. RoBERTa finds 0% of them; GLiNER, prompted with "organization", finds 52-82%. This is not a model
    defect, so scores across different label sets should not be compared directly.
-2. **Twitter handle markup.** TweetNER7 writes handles as `{@name@}`: 43% of gold company and product mentions. RoBERTa gets 0% on all of them.
+2. **Twitter handle markup.** TweetNER7 writes handles as `{@name@}`: 65% of gold product mentions and 43% of gold company mentions (55% of the two together) in the test set. RoBERTa gets 0% on all of them.
 3. **Long tail.** In WNUT-17, 98% of gold company and product strings never occur in training. A trained model cannot cover them.
 4. **Inconsistent annotation.** The same string carries different labels (e.g. "London": OTHER 777 times, PROD 3 times; "iTunes":
    company and product). In Few-NERD, 15% of company and product mentions come from strings that are OTHER elsewhere.
