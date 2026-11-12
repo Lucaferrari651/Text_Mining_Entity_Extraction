@@ -1,0 +1,45 @@
+{
+ "handle_tokens_in_test": 3306,
+ "crf_fewnerd_to_tweetner7": {
+  "raw": {
+   "PER": 0.306,
+   "ALL": 0.21,
+   "PROD": 0.026,
+   "COMP": 0.027
+  },
+  "stripped": {
+   "PER": 0.41,
+   "ALL": 0.309,
+   "PROD": 0.16,
+   "COMP": 0.049
+  }
+ },
+ "crf_tweetner7_raw_train": {
+  "raw": {
+   "PER": 0.693,
+   "ALL": 0.636,
+   "PROD": 0.647,
+   "COMP": 0.426
+  },
+  "stripped": {
+   "PER": 0.524,
+   "ALL": 0.391,
+   "PROD": 0.137,
+   "COMP": 0.208
+  }
+ },
+ "crf_tweetner7_stripped_train": {
+  "raw": {
+   "PER": 0.454,
+   "ALL": 0.405,
+   "PROD": 0.426,
+   "COMP": 0.19
+  },
+  "stripped": {
+   "PER": 0.656,
+   "ALL": 0.584,
+   "PROD": 0.582,
+   "COMP": 0.348
+  }
+ }
+}

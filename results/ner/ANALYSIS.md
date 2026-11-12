@@ -251,3 +251,31 @@ Comparison on the same full test sets (all systems in sections above):
   So Few-NERD seems saturated for this approach, and more model size or more epochs is not where the gain is.
 - Products remain the weakest type on WNUT-17; companies and products on Few-NERD stay near 0.69.
 - Not done: the run on all three datasets together and the TweetNER7 run, because the free Colab GPU quota ran out; WNUT-17 is a single run with 66 gold companies in the test set.
+
+## 9. Strip the `{@Name@}` markup (CRF, CPU) and bootstrap intervals
+Test: replace each `{@Name@}` token (3,306 in the TweetNER7 test set) by the words of the name and map the gold mentions to the new positions
+(`ldred/markup.py`, `strip_markup_eval.py`). Model: our CRF (not RoBERTa), Few-NERD training capped at 20,000 sentences, 60 iterations, one run.
+Micro-F1 over PER/COMP/PROD on the TweetNER7 test set.
+
+| CRF trained on | Test as is | Test stripped |
+|---|---|---|
+| Few-NERD (Wikipedia, no markup) | 0.210 (PROD 0.026) | **0.309** (PROD 0.160) |
+| TweetNER7 as is | **0.636** | 0.391 |
+| TweetNER7 stripped | 0.405 | **0.584** |
+
+**Reading.**
+- For a model trained on Wikipedia, stripping the markup raises the tweet score by 0.10 (product F1 from 0.03 to 0.16). So the markup is a real part of the
+  drop, but not all of it: 0.31 is still far below the in-domain scores.
+- For a model trained on tweets the markup is a useful cue (it marks a handle that is usually an entity): training and testing as is gives 0.636, stripped
+  gives 0.584. So stripping is not a free gain when the training data has the markup.
+- Caveat: this is the CRF. The RoBERTa version needs a GPU (`--strip-markup` in `ner_unified.py`, see RUN.md); the effect could differ.
+
+Bootstrap (2,000 resamples of the sentences, 95% interval, `bootstrap_llm.py`; micro-F1 over PER/COMP/PROD):
+
+| Dataset | Llama 8B (800 sent.) | Llama 70B (300 sent.) | 70B minus 8B, same sentences |
+|---|---|---|---|
+| Few-NERD | 0.532 [0.486, 0.572] | 0.636 [0.576, 0.691] | +0.113 [0.056, 0.176] |
+| WNUT-17 | 0.444 [0.388, 0.498] | 0.620 [0.537, 0.694] | +0.181 [0.099, 0.274] |
+| TweetNER7 | 0.358 [0.327, 0.387] | 0.458 [0.411, 0.504] | +0.093 [0.043, 0.143] |
+
+The 70B is better than the 8B on the same sentences (the interval excludes zero). The 70B intervals are wide (WNUT-17: 154 gold mentions), so a gap of a few points to the trained models is not meaningful.
