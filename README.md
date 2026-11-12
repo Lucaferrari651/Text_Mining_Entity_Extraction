@@ -24,6 +24,22 @@ OTHER (see RUN.md for how they were downloaded and for the training commands in 
 See [RUN.md](RUN.md). Baseline on dev, offline: `python3 run_baseline.py Linked-DocRED/Linked-DocRED`.
 Tests: `python3 -m pytest -q tests`.
 
+## Entity extraction experiments (topic 2: PER / COMP / PROD)
+Results and reading guide: `results/ner/ANALYSIS.md` (section 0 is the summary). How to run each script: `RUN.md`.
+
+| Script | What it does | Needs GPU |
+|---|---|---|
+| `ner_unified.py` | train and evaluate a token classifier; `--strip-markup` expands `{@Name@}` tokens, `--media-as-comp` counts Few-NERD media organisations as COMP | yes |
+| `strip_markup_eval.py` | CRF with and without the markup | no |
+| `bootstrap_llm.py` | paired bootstrap intervals, Llama 70B vs 8B on the same sentences | no |
+| `merged_cp.py` | F1 with company and product merged into one type | no |
+| `analyze_boundaries.py` | missed / wrong type / boundary error counts and lenient F1 | no |
+| `crf_media.py` | CRF on Few-NERD with and without media-as-company | no |
+| `error_examples.py` | real examples per error cause, written to `results/ner/error_examples.md` | no |
+| `review_sheet.py` | `make`: sheet of false positives for two human reviewers; `score`: agreement (Cohen's kappa) and F1 if the accepted ones were gold | no |
+
+The no-GPU scripts read saved predictions (`results/ner/runs/<run>/preds_<set>.json`). Smoke tests: `tests/test_analysis_scripts.py`, `tests/test_markup.py`, `tests/test_review_sheet.py`.
+
 ## Current results (dev split)
 | Stage | Result |
 |---|---|

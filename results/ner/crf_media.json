@@ -1,0 +1,16 @@
+{
+ "normal": {
+  "PER": 0.756,
+  "ALL": 0.656,
+  "PROD": 0.374,
+  "COMP": 0.381,
+  "gold_COMP": 3903
+ },
+ "media_as_company": {
+  "PROD": 0.385,
+  "ALL": 0.652,
+  "PER": 0.755,
+  "COMP": 0.429,
+  "gold_COMP": 5137
+ }
+}

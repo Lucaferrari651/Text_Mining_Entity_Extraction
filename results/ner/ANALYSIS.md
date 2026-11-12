@@ -4,6 +4,42 @@ Numbers are the share of gold mentions found with the exact span and the right t
 (Few-NERD, TweetNER7), `category_analysis_800.md` (WNUT-17 sample shared with the LLM) and `category_analysis_crossner.md`.
 Examples with the gold entity in bold are in `mismatch_analysis_*.md` (section E).
 
+## 0. Summary (read this first)
+Task: mark every person (PER), company (COMP) and product (PROD) in a sentence. Score: micro-F1, exact span and type, test split of each dataset, one run per setting unless said.
+
+**Best scores.**
+
+| Test set | Best system | F1 | Note |
+|---|---|---|---|
+| Few-NERD | RoBERTa-base, Few-NERD only | 0.835 | the large model trained on all three sets gets 0.824 (30,000 of 131,767 training sentences, section 11) |
+| WNUT-17 | RoBERTa-large, WNUT-17 only | 0.636 | the large model trained on all three sets: 0.630, a difference far inside the interval (±0.035) |
+| TweetNER7 | RoBERTa-large, all three sets | 0.733 | base model on all three sets 0.719; Few-NERD-only base model 0.375 |
+
+Best single model for the three sets: **RoBERTa-large trained on all three** (0.824 / 0.630 / 0.733, mean 0.729). Without training on the target sets: GLiNER (threshold 0.8) 0.632 / 0.446 / 0.508;
+Llama 3.3 70B 0.636 / 0.620 / 0.458 on 300 sentences; Llama 3.1 8B 0.532 / 0.444 / 0.358 on 800 sentences. The 70B is better than the 8B on the same sentences (section 9), but its samples are small and it is not ranked against the trained models.
+
+**What explains the errors (measured).**
+
+| Cause | Evidence | Section |
+|---|---|---|
+| Different text domain and label definitions | Few-NERD-only model: company F1 0.68 (Few-NERD) → 0.07 (tweets); training on tweets brings TweetNER7 from 0.375 to 0.719 | 2, 8 |
+| `{@name@}` markup in TweetNER7 | 65% of product and 43% of company mentions in the test set; stripping it lifts the Few-NERD-trained RoBERTa-base from 0.380 to 0.545 (+0.165, interval [0.152, 0.178]); the CRF gains 0.10 | 2, 9, 10 |
+| Names never seen | 98% of the gold company and product strings of WNUT-17 are not in its training set | 2, error_examples.md |
+| Not found at all | 53% to 67% of the unmatched gold mentions (large model), 80% to 94% for the Wikipedia-trained base model on tweets | 13 |
+| Boundaries | counting overlapping right-type predictions as correct adds only +0.03 to +0.06 | 13 |
+| Company vs product label | merging the two adds +0.01 to +0.04 for trained models, +0.14 for the 70B on TweetNER7 | 12 |
+| Media organisations are OTHER in Few-NERD | examples in `error_examples.md`; CRF test: company F1 +0.05, overall F1 unchanged | 14 |
+
+**Ideas that did not help.** A DBpedia company dictionary (covers 18% to 39% of gold companies, never improves the overall F1, section 3-4); a written guideline in the LLM prompt
+(8B, same 300 sentences: 0.518 / 0.417 / 0.364 → 0.434 / 0.330 / 0.332, section 7); a bigger encoder on Few-NERD (0.831 vs 0.835, section 8). Sparse sentences are not the problem: the false positives per 100 sentences
+without any target (RoBERTa 7 to 12, GLiNER 19 to 57, 8B 10 to 60) are (section 6).
+
+**Not done / open.** More seeds (single seed everywhere), the markup-stripped version of the large model, the full Few-NERD training set, CrossNER and DFKI as extra tests, a manual review of the false positives
+(`review_sheet.csv`, instructions in `review_instructions.md`), a transformer on Linked-DocRED to compare with the paper's 77.2 (our CRF: 0.771, own metric).
+
+**Files.** Scripts: `ner_unified.py` (training, `--strip-markup`, `--media-as-comp`), `bootstrap_llm.py`, `merged_cp.py`, `analyze_boundaries.py`, `strip_markup_eval.py`, `crf_media.py`,
+`error_examples.py` (output `error_examples.md`: real examples for each cause), `review_sheet.py`. Runs and predictions: `runs/`. How to run each one: `RUN.md`.
+
 ## 1. Which categories are not detected
 
 | Subcategory | Dataset | RoBERTa (Few-NERD) | GLiNER 0.8 |
@@ -381,3 +417,15 @@ Share of the not-exactly-found gold mentions:
   ("Boeing B-52 Stratofortress" against "Boeing B-52"). On TweetNER7 the same count is 62 shorter and 15 longer (often a leading "The" or place name in the gold).
 - So a boundary-tolerant score would help a little, but not change the ranking; the larger gains must come from finding the mentions.
 - Caveat: lenient F1 is our approximation (right type, any overlap); one run per system.
+
+## 14. Media organisations counted as company (CRF, CPU)
+Few-NERD labels newspapers, TV and radio stations as `organization-media/newspaper`, which we map to OTHER. Many people would call the BBC a company, and the models often predict COMP for such names (examples in `error_examples.md`, section 5).
+`crf_media.py` trains our CRF on 20,000 Few-NERD sentences twice and scores each with its own definition: with the normal mapping (3,903 gold COMP in test) and with media organisations as COMP (5,137 gold COMP in test).
+
+| Mapping | PER | COMP | PROD | ALL |
+|---|---|---|---|---|
+| normal | 0.756 | 0.381 | 0.374 | 0.656 |
+| media as COMP | 0.755 | 0.429 | 0.385 | 0.652 |
+
+Reading: with the broader company definition the company score rises by 0.048, and the overall score is unchanged (0.656 vs 0.652). The two rows are two label definitions, not one model beating another, and a CRF is not the transformer. So the definition of "company" moves the company score by about 5 points but not the total, because the extra gold mentions add as many misses as hits. The RoBERTa version of this test is in the Colab notebook (block 3) and is not run yet.
+Single run, no interval.
