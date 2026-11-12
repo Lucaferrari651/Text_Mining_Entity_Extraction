@@ -1,0 +1,50 @@
+{
+ "args": {
+  "data_dir": "ner_data",
+  "train": "fewnerd",
+  "eval": "tweetner7",
+  "eval_split": "test",
+  "model": "roberta-base",
+  "epochs": 3,
+  "lr": 3e-05,
+  "batch_size": 32,
+  "max_len": 128,
+  "seed": 13,
+  "train_limit": 30000,
+  "eval_limit": null,
+  "b2nerd_dir": null,
+  "keep_best": true,
+  "strip_markup": true,
+  "out": "m_strip",
+  "save_model": false
+ },
+ "results": {
+  "tweetner7": {
+   "OTHER": [
+    0.4820215741110667,
+    0.48414927768860355,
+    0.48308308308308306
+   ],
+   "PROD": [
+    0.2771618625277162,
+    0.10486577181208054,
+    0.15216068167985394
+   ],
+   "ALL": [
+    0.6954469739033871,
+    0.4480414952602397,
+    0.5449798759926031
+   ],
+   "PER": [
+    0.7703204047217538,
+    0.6904474002418379,
+    0.7282002231787024
+   ],
+   "COMP": [
+    0.5161290322580645,
+    0.08799266727772685,
+    0.1503523884103367
+   ]
+  }
+ }
+}

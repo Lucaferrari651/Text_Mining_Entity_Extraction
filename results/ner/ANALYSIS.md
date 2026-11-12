@@ -279,3 +279,23 @@ Bootstrap (2,000 resamples of the sentences, 95% interval, `bootstrap_llm.py`; m
 | TweetNER7 | 0.358 [0.327, 0.387] | 0.458 [0.411, 0.504] | +0.093 [0.043, 0.143] |
 
 The 70B is better than the 8B on the same sentences (the interval excludes zero). The 70B intervals are wide (WNUT-17: 154 gold mentions), so a gap of a few points to the trained models is not meaningful.
+
+## 10. Strip the markup with RoBERTa-base (GPU run)
+Same model as section 9 but RoBERTa-base: trained on Few-NERD only (first 30,000 training sentences, 3 epochs, best validation epoch, seed 13), scored on the
+TweetNER7 test set (5,591 gold mentions of PER/COMP/PROD) as it is (`m_raw`) and with every `{@Name@}` token replaced by the words of the name (`m_strip`,
+`--strip-markup`; the gold mentions are the same, remapped to the new positions).
+
+| Test set | PER | COMP | PROD | All (micro-F1) | Precision | Recall |
+|---|---|---|---|---|---|---|
+| As it is | 0.532 | 0.083 | 0.106 | 0.380 | 0.650 | 0.268 |
+| Markup stripped | 0.728 | 0.150 | 0.152 | **0.545** | 0.695 | 0.448 |
+
+- Stripping the markup raises the TweetNER7 F1 of the Wikipedia-trained model from 0.380 to 0.545 (+0.165, bootstrap 95% interval [0.152, 0.178] over the
+  test sentences; `results/ner/strip_markup_roberta_bootstrap.json`). Almost all of the gain is recall (0.268 → 0.448).
+- Person improves most (0.53 → 0.73): many of the marked-up strings are people and organisation accounts. Company (0.08 → 0.15) and product (0.11 → 0.15)
+  also improve but stay low. So the markup is a large part of the drop from Few-NERD (0.835) to tweets, and the rest (company/product definitions,
+  unseen names) is still there.
+- This agrees with the CRF test (section 9, 0.210 → 0.309), with a larger effect for RoBERTa. The CRF also showed that the markup is a useful cue when the
+  training data has it (tweet-trained CRF: 0.636 as is, 0.584 stripped); this was not tested with RoBERTa.
+- Limits: one seed, a 30,000-sentence training cap (the full-data run in the main table gave 0.375 as is), only the Few-NERD-trained model. The interval
+  covers the test sentences, not seeds.
