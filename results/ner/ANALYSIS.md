@@ -299,3 +299,33 @@ TweetNER7 test set (5,591 gold mentions of PER/COMP/PROD) as it is (`m_raw`) and
   training data has it (tweet-trained CRF: 0.636 as is, 0.584 stripped); this was not tested with RoBERTa.
 - Limits: one seed, a 30,000-sentence training cap (the full-data run in the main table gave 0.375 as is), only the Few-NERD-trained model. The interval
   covers the test sentences, not seeds.
+
+## 11. One RoBERTa-large model trained on all three datasets
+Run `s_all_rl`: RoBERTa-large trained on Few-NERD (first 30,000 sentences), WNUT-17 and TweetNER7 training splits together, 2 epochs, learning rate 2e-5, batch
+size 16, best validation epoch (validation of all three sets), seed 13, markup left as it is. Scored once on the full test split of each set (micro-F1 over PER/COMP/PROD,
+exact span and type). 95% intervals: 2,000 bootstrap resamples of the test sentences (`results/ner/bootstrap_roberta_large_all.json`).
+
+| Test set | PER | COMP | PROD | All | 95% interval |
+|---|---|---|---|---|---|
+| Few-NERD | 0.893 | 0.670 | 0.683 | 0.824 | [0.819, 0.829] |
+| WNUT-17 | 0.722 | 0.406 | 0.365 | 0.630 | [0.593, 0.664] |
+| TweetNER7 | 0.833 | 0.519 | 0.657 | 0.733 | [0.721, 0.744] |
+
+Comparison with the other supervised runs (full test sets, one seed each):
+
+| System | Few-NERD | WNUT-17 | TweetNER7 | Mean of the three |
+|---|---|---|---|---|
+| RoBERTa-base, Few-NERD only | 0.835 | 0.516 | 0.375 | 0.575 |
+| RoBERTa-base, all three sets | 0.834 | 0.564 | 0.719 | 0.706 |
+| RoBERTa-large, own data (one model per set) | 0.831 | 0.636 | not run | – |
+| **RoBERTa-large, all three sets (this run)** | 0.824 | 0.630 | 0.733 | **0.729** |
+
+**Reading.**
+- This is the best single model across the three sets: it is the best system on TweetNER7 (0.733 against 0.719 for the base model trained on all three) and
+  close to the best on WNUT-17 (0.630 against 0.636 for the large model trained on WNUT-17 alone, a difference far inside the WNUT-17 interval of about ±0.035).
+- On Few-NERD it is 0.011 below the base model (0.824 against 0.835); this run used only 30,000 of the 131,767 Few-NERD training sentences and 2 epochs, so the gap may
+  come from the smaller training data rather than from the model. The Few-NERD interval is narrow (±0.005), so this small difference is probably real for this setting.
+- The gains over the base model trained on all three are small (+0.014 on TweetNER7, +0.066 on WNUT-17, −0.010 on Few-NERD) and come from one seed, so we do not claim that the
+  large model is better in general. We can say it gives the best mean score, with one model for all three sets.
+- Company and product stay the weak types outside Wikipedia: WNUT-17 COMP 0.406 and PROD 0.365 (PROD recall only 0.29), TweetNER7 COMP 0.519.
+- Not done: the markup-stripped version of this model, other seeds, and the full Few-NERD training set.
