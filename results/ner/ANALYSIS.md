@@ -329,3 +329,27 @@ Comparison with the other supervised runs (full test sets, one seed each):
   large model is better in general. We can say it gives the best mean score, with one model for all three sets.
 - Company and product stay the weak types outside Wikipedia: WNUT-17 COMP 0.406 and PROD 0.365 (PROD recall only 0.29), TweetNER7 COMP 0.519.
 - Not done: the markup-stripped version of this model, other seeds, and the full Few-NERD training set.
+
+## 12. Company and product scored as one type
+Question: how much of the low company/product score is confusion between the two labels, and how much is not finding the mention (or its boundaries) at all?
+`merged_cp.py` renames both gold and predicted COMP and PROD to one type CP and scores again (exact span still required), on the saved predictions
+(`results/ner/merged_cp.json`). Micro-F1 over PER/COMP/PROD (`3 types`) against PER/CP (`merged`); `CP` is the F1 of the merged type alone.
+
+| System | Test set | 3 types | merged | COMP | PROD | CP |
+|---|---|---|---|---|---|---|
+| RoBERTa-large, all three sets | Few-NERD | 0.824 | 0.832 | 0.670 | 0.683 | 0.703 |
+| | WNUT-17 | 0.630 | 0.645 | 0.406 | 0.365 | 0.439 |
+| | TweetNER7 | 0.733 | 0.770 | 0.519 | 0.657 | 0.680 |
+| RoBERTa-base, Few-NERD only | TweetNER7, as is | 0.380 | 0.389 | 0.083 | 0.106 | 0.122 |
+| | TweetNER7, markup stripped | 0.545 | 0.563 | 0.150 | 0.152 | 0.209 |
+| Llama 3.3 70B (300 sent.) | Few-NERD / WNUT-17 / TweetNER7 | 0.636 / 0.620 / 0.458 | 0.639 / 0.627 / 0.595 | | | 0.319 / 0.440 / 0.497 |
+| Llama 3.1 8B (800 sent.) | Few-NERD / WNUT-17 / TweetNER7 | 0.532 / 0.444 / 0.358 | 0.541 / 0.450 / 0.397 | | | 0.352 / 0.176 / 0.230 |
+
+**Reading.**
+- For the supervised models, merging company and product helps only a little (+0.008 on Few-NERD, +0.015 on WNUT-17, +0.037 on TweetNER7 for the large model). The
+  low company and product scores are therefore mostly mentions that are missed or have the wrong boundaries, not company/product label swaps. Even merged, the CP F1 stays at 0.44 on WNUT-17
+  and 0.21 for the Few-NERD-trained base model on stripped tweets.
+- The one case with a large effect is the 70B LLM on TweetNER7 (0.458 → 0.595): it finds many company/product mentions but often with the other label, so a part of its
+  low score is the definition gap (consistent with "Twitter" being 142 times company and 11 times product).
+- On TweetNER7 the trained large model also gains most from merging (company 0.519, merged 0.680): its remaining company/product errors include the company-or-product choice.
+- Caveat: the LLM rows are on the 300 / 800-sentence samples; all rows are single runs.
