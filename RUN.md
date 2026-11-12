@@ -166,3 +166,17 @@ python3 ner_unified.py ner_data --train fewnerd,wnut17,tweetner7 --eval fewnerd,
 python3 ner_unified.py ner_data --train fewnerd,wnut17,tweetner7 --eval fewnerd,wnut17,tweetner7 --model microsoft/deberta-v3-large --epochs 3 --lr 1e-5 --batch-size 16 --keep-best --out s_all_deb
 ```
 Do a quick check first with `--train-limit 2000 --eval-limit 300 --epochs 1`. TweetNER7 alone is the partner's task.
+
+### Strip the `{@Name@}` markup and score again (idea 1)
+`--strip-markup` replaces every `{@Name@}` token by the words of the name (train, validation and test), and maps the gold mentions to the new
+positions. Same command twice, with and without the flag, same seed:
+```bash
+python3 ner_unified.py ner_data --train fewnerd --eval tweetner7 --model roberta-base --epochs 3 --keep-best --out m_raw
+python3 ner_unified.py ner_data --train fewnerd --eval tweetner7 --model roberta-base --epochs 3 --keep-best --strip-markup --out m_strip
+```
+CPU check with the CRF (no GPU, a few minutes): `python3 strip_markup_eval.py --data-dir ner_data --out results/ner/strip_markup.json`.
+
+### Bootstrap intervals (CPU)
+`python3 bootstrap_llm.py --data-dir ner_data --out results/ner/bootstrap_llm.json` resamples the sentences of the saved LLM runs 2000 times
+(micro-F1 over PER/COMP/PROD) and gives a 95% interval, plus the paired 70B minus 8B difference on shared sentences. For the supervised systems
+the same needs their `preds_*.json`: download each run folder right after the run.
