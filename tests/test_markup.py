@@ -17,3 +17,14 @@ def test_tokens_expand_and_spans_follow():
 def test_original_untouched_and_counted():
     d = doc(); strip_handles(d)
     assert d["sents"][0][1] == "{@Fife Council@}" and count_handles([d]) == 2
+
+
+def test_media_as_company_mapping():
+    from ldred import ner_datasets as D
+    assert D.unify("organization-media/newspaper") == "OTHER"
+    D.media_as_company(True)
+    try:
+        assert D.unify("organization-media/newspaper") == "COMP"
+    finally:
+        D.media_as_company(False)
+    assert D.unify("organization-media/newspaper") == "OTHER"

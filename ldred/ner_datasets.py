@@ -35,11 +35,21 @@ FEWNERD_FINE = [
     "product-other", "product-ship", "product-software", "product-train", "product-weapon"]
 
 
+COMPANY_RAW = {"corporation", "organization-company"}
+MEDIA_RAW = {"organization-media/newspaper"}          # Few-NERD: BBC, NBC, ABC ... are tagged as media, not company
+
+
+def media_as_company(on=True):
+    """Alternative mapping (idea from the error analysis): Few-NERD media organisations count as COMP. Call before loading."""
+    global COMPANY_RAW
+    COMPANY_RAW = (COMPANY_RAW | MEDIA_RAW) if on else (COMPANY_RAW - MEDIA_RAW)
+
+
 def unify(raw_type):
     """Dataset-specific type name -> one of UNIFIED."""
     if raw_type == "person" or raw_type.startswith("person-"):
         return "PER"
-    if raw_type in ("corporation", "organization-company"):
+    if raw_type in COMPANY_RAW:
         return "COMP"
     if raw_type == "product" or raw_type.startswith("product-"):
         return "PROD"
