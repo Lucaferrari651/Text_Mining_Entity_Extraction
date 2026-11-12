@@ -22,7 +22,7 @@ Llama 3.3 70B 0.636 / 0.620 / 0.458 on 300 sentences; Llama 3.1 8B 0.532 / 0.444
 
 | Cause | Evidence | Section |
 |---|---|---|
-| Different text domain and label definitions | Few-NERD-only model: company F1 0.68 (Few-NERD) → 0.07 (tweets); training on tweets brings TweetNER7 from 0.375 to 0.719 | 2, 8 |
+| Different text domain and label definitions | the Few-NERD-only RoBERTa-base gets 0.835 on Few-NERD and 0.375 on TweetNER7; adding the tweet sets brings TweetNER7 to 0.719 | 2, 8 |
 | `{@name@}` markup in TweetNER7 | 65% of product and 43% of company mentions in the test set; stripping it lifts the Few-NERD-trained RoBERTa-base from 0.380 to 0.545 (+0.165, interval [0.152, 0.178]); the CRF gains 0.10 | 2, 9, 10 |
 | Names never seen | 98% of the gold company and product strings of WNUT-17 are not in its training set | 2, error_examples.md |
 | Not found at all | 53% to 67% of the unmatched gold mentions (large model), 80% to 94% for the Wikipedia-trained base model on tweets | 13 |
@@ -30,9 +30,8 @@ Llama 3.3 70B 0.636 / 0.620 / 0.458 on 300 sentences; Llama 3.1 8B 0.532 / 0.444
 | Company vs product label | merging the two adds +0.01 to +0.04 for trained models, +0.14 for the 70B on TweetNER7 | 12 |
 | Media organisations are OTHER in Few-NERD | examples in `error_examples.md`; CRF test: company F1 +0.05, overall F1 unchanged | 14 |
 
-**Ideas that did not help.** A DBpedia company dictionary (covers 18% to 39% of gold companies, never improves the overall F1, section 3-4); a written guideline in the LLM prompt
-(8B, same 300 sentences: 0.518 / 0.417 / 0.364 → 0.434 / 0.330 / 0.332, section 7); a bigger encoder on Few-NERD (0.831 vs 0.835, section 8). Sparse sentences are not the problem: the false positives per 100 sentences
-without any target (RoBERTa 7 to 12, GLiNER 19 to 57, 8B 10 to 60) are (section 6).
+**Ideas that did not help.** A DBpedia company dictionary (covers 18% to 39% of gold companies; the overall F1 never improves, section 5); a written guideline in the 8B prompt (the 6-shot baseline is best or tied, section 7); a bigger encoder on Few-NERD alone (0.831 vs 0.835, section 8).
+**Sparse sentences.** The paper's pattern (worse in sparse text) does not show up; instead GLiNER and the 8B LLM fire on sentences with nothing to find: 30 to 57 false positives per 100 such sentences for GLiNER, 55 to 60 for the 8B, against 7 to 12 for RoBERTa (section 6).
 
 **Not done / open.** More seeds (single seed everywhere), the markup-stripped version of the large model, the full Few-NERD training set, CrossNER and DFKI as extra tests, a manual review of the false positives
 (`review_sheet.csv`, instructions in `review_instructions.md`), a transformer on Linked-DocRED to compare with the paper's 77.2 (our CRF: 0.771, own metric).
