@@ -353,3 +353,31 @@ Question: how much of the low company/product score is confusion between the two
   low score is the definition gap (consistent with "Twitter" being 142 times company and 11 times product).
 - On TweetNER7 the trained large model also gains most from merging (company 0.519, merged 0.680): its remaining company/product errors include the company-or-product choice.
 - Caveat: the LLM rows are on the 300 / 800-sentence samples; all rows are single runs.
+
+## 13. Boundary errors: how many missed mentions are only a boundary problem?
+`analyze_boundaries.py` (saved predictions only, `results/ner/boundaries.json`). Each gold mention of PER/COMP/PROD that is not found exactly is put in one class:
+*wrong type* (same span, other type), *boundary* (a prediction of the right type overlaps it with other boundaries), *boundary + type* (overlap, other type), *missed* (no prediction touches it).
+*Lenient F1*: a right-type prediction that overlaps a gold mention counts as correct (one prediction per gold mention); *exact F1* is the normal score (it reproduces the tables above).
+
+Share of the not-exactly-found gold mentions:
+
+| System | Test set | Exact F1 | Lenient F1 | Wrong type | Boundary | Boundary + type | Missed |
+|---|---|---|---|---|---|---|---|
+| RoBERTa-large, all three | Few-NERD | 0.824 | 0.881 | 10% | 35% | 2% | 53% |
+| | WNUT-17 | 0.630 | 0.691 | 11% | 20% | 2% | 67% |
+| | TweetNER7 | 0.733 | 0.765 | 25% | 13% | 3% | 60% |
+| RoBERTa-base, Few-NERD only | TweetNER7 as is | 0.380 | 0.422 | 2% | 4% | 1% | 94% |
+| | TweetNER7 stripped | 0.545 | 0.629 | 4% | 14% | 2% | 80% |
+| Llama 70B (300 sent.) | Few-NERD / WNUT-17 / TweetNER7 | 0.636 / 0.620 / 0.458 | 0.669 / 0.641 / 0.470 | 10% / 2% / 31% | 21% / 5% / 2% | 4% / 6% / 1% | 65% / 88% / 65% |
+| Llama 8B (800 sent.) | Few-NERD / WNUT-17 / TweetNER7 | 0.532 / 0.444 / 0.358 | 0.586 / 0.474 / 0.375 | 5% / 3% / 7% | 14% / 4% / 2% | 2% / 1% / 1% | 80% / 92% / 90% |
+
+**Reading.**
+- Boundaries are not the main problem. Counting overlapping right-type predictions as correct raises the large model by only +0.057 (Few-NERD), +0.061 (WNUT-17) and +0.032 (TweetNER7).
+  The main loss is mentions that are not found at all (53% to 67% of the unmatched gold mentions for the large model, 80% to 94% for the Few-NERD-trained base model on tweets).
+- Stripping the markup moves the base model's errors from "not found" (94% → 80%) to "found with other boundaries" (4% → 14%): the mentions are now seen but not always cut like the gold.
+- Wrong type matters mainly on TweetNER7: 25% of the large model's unmatched gold mentions and 31% of the 70B's (the company/product definition issue of section 12).
+- For company and product boundary errors of the large model on Few-NERD (1,106 cases), the prediction is shorter than the gold in 752 and longer in 346. The gold often includes a head noun or
+  punctuation the model leaves out ("Wii model" gold, "Wii" predicted; "Kibi dango" gold, "Kibi" predicted; a trailing "'s", "." or ")"), and sometimes the model adds a name part the gold leaves out
+  ("Boeing B-52 Stratofortress" against "Boeing B-52"). On TweetNER7 the same count is 62 shorter and 15 longer (often a leading "The" or place name in the gold).
+- So a boundary-tolerant score would help a little, but not change the ranking; the larger gains must come from finding the mentions.
+- Caveat: lenient F1 is our approximation (right type, any overlap); one run per system.

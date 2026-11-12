@@ -1,0 +1,431 @@
+{
+ "s_all_rl/fewnerd": {
+  "gold": 31714,
+  "pred": 32409,
+  "exact_f1": 0.824,
+  "lenient_f1": 0.881,
+  "per_type": {
+   "COMP": {
+    "exact": 2670,
+    "missed": 661,
+    "wrong_type": 207,
+    "boundary": 311,
+    "boundary+type": 54
+   },
+   "PER": {
+    "exact": 19468,
+    "boundary": 760,
+    "missed": 1181,
+    "wrong_type": 141,
+    "boundary+type": 29
+   },
+   "PROD": {
+    "exact": 4290,
+    "boundary": 795,
+    "missed": 939,
+    "wrong_type": 174,
+    "boundary+type": 34
+   }
+  },
+  "spurious_by_type": {
+   "PER": 1585,
+   "PROD": 975,
+   "COMP": 773
+  },
+  "share_of_missed_gold": {
+   "wrong_type": 0.099,
+   "boundary": 0.353,
+   "boundary+type": 0.022,
+   "missed": 0.526
+  }
+ },
+ "s_all_rl/wnut17": {
+  "gold": 622,
+  "pred": 658,
+  "exact_f1": 0.63,
+  "lenient_f1": 0.691,
+  "per_type": {
+   "COMP": {
+    "exact": 29,
+    "missed": 30,
+    "boundary": 3,
+    "wrong_type": 4
+   },
+   "PER": {
+    "boundary": 30,
+    "exact": 337,
+    "missed": 54,
+    "wrong_type": 7,
+    "boundary+type": 1
+   },
+   "PROD": {
+    "missed": 63,
+    "wrong_type": 13,
+    "exact": 37,
+    "boundary+type": 3,
+    "boundary": 11
+   }
+  },
+  "spurious_by_type": {
+   "PER": 136,
+   "PROD": 22,
+   "COMP": 28
+  },
+  "share_of_missed_gold": {
+   "wrong_type": 0.11,
+   "boundary": 0.201,
+   "boundary+type": 0.018,
+   "missed": 0.671
+  }
+ },
+ "s_all_rl/tweetner7": {
+  "gold": 5591,
+  "pred": 5699,
+  "exact_f1": 0.733,
+  "lenient_f1": 0.765,
+  "per_type": {
+   "COMP": {
+    "exact": 577,
+    "wrong_type": 147,
+    "missed": 310,
+    "boundary": 44,
+    "boundary+type": 13
+   },
+   "PER": {
+    "exact": 2753,
+    "boundary": 106,
+    "missed": 316,
+    "wrong_type": 116,
+    "boundary+type": 17
+   },
+   "PROD": {
+    "exact": 806,
+    "missed": 239,
+    "wrong_type": 99,
+    "boundary": 35,
+    "boundary+type": 13
+   }
+  },
+  "spurious_by_type": {
+   "COMP": 301,
+   "PROD": 249,
+   "PER": 366
+  },
+  "share_of_missed_gold": {
+   "wrong_type": 0.249,
+   "boundary": 0.127,
+   "boundary+type": 0.03,
+   "missed": 0.595
+  }
+ },
+ "m_raw/tweetner7": {
+  "gold": 5591,
+  "pred": 2308,
+  "exact_f1": 0.38,
+  "lenient_f1": 0.422,
+  "per_type": {
+   "COMP": {
+    "missed": 983,
+    "exact": 49,
+    "wrong_type": 46,
+    "boundary+type": 10,
+    "boundary": 3
+   },
+   "PER": {
+    "missed": 1783,
+    "exact": 1369,
+    "boundary": 130,
+    "boundary+type": 6,
+    "wrong_type": 20
+   },
+   "PROD": {
+    "missed": 1060,
+    "boundary": 34,
+    "exact": 83,
+    "wrong_type": 7,
+    "boundary+type": 8
+   }
+  },
+  "spurious_by_type": {
+   "PROD": 201,
+   "PER": 304,
+   "COMP": 24
+  },
+  "share_of_missed_gold": {
+   "wrong_type": 0.018,
+   "boundary": 0.041,
+   "boundary+type": 0.006,
+   "missed": 0.935
+  }
+ },
+ "m_strip/tweetner7": {
+  "gold": 5591,
+  "pred": 3602,
+  "exact_f1": 0.545,
+  "lenient_f1": 0.629,
+  "per_type": {
+   "COMP": {
+    "wrong_type": 66,
+    "missed": 886,
+    "exact": 96,
+    "boundary+type": 31,
+    "boundary": 12
+   },
+   "PER": {
+    "exact": 2284,
+    "boundary": 380,
+    "missed": 615,
+    "boundary+type": 7,
+    "wrong_type": 22
+   },
+   "PROD": {
+    "missed": 967,
+    "boundary": 45,
+    "exact": 125,
+    "wrong_type": 42,
+    "boundary+type": 13
+   }
+  },
+  "spurious_by_type": {
+   "PROD": 191,
+   "PER": 290,
+   "COMP": 28
+  },
+  "share_of_missed_gold": {
+   "wrong_type": 0.042,
+   "boundary": 0.142,
+   "boundary+type": 0.017,
+   "missed": 0.8
+  }
+ },
+ "l_llama70b/fewnerd": {
+  "gold": 267,
+  "pred": 409,
+  "exact_f1": 0.636,
+  "lenient_f1": 0.669,
+  "per_type": {
+   "COMP": {
+    "missed": 6,
+    "exact": 27,
+    "boundary": 1,
+    "boundary+type": 1,
+    "wrong_type": 2
+   },
+   "PER": {
+    "exact": 174,
+    "missed": 13,
+    "boundary": 4,
+    "wrong_type": 2
+   },
+   "PROD": {
+    "exact": 14,
+    "wrong_type": 1,
+    "boundary+type": 1,
+    "missed": 15,
+    "boundary": 6
+   }
+  },
+  "spurious_by_type": {
+   "PER": 39,
+   "COMP": 105,
+   "PROD": 29
+  },
+  "share_of_missed_gold": {
+   "wrong_type": 0.096,
+   "boundary": 0.212,
+   "boundary+type": 0.038,
+   "missed": 0.654
+  }
+ },
+ "l_llama70b/wnut17": {
+  "gold": 154,
+  "pred": 130,
+  "exact_f1": 0.62,
+  "lenient_f1": 0.641,
+  "per_type": {
+   "COMP": {
+    "missed": 4,
+    "exact": 13
+   },
+   "PER": {
+    "missed": 35,
+    "exact": 69
+   },
+   "PROD": {
+    "exact": 6,
+    "missed": 19,
+    "boundary": 3,
+    "wrong_type": 1,
+    "boundary+type": 4
+   }
+  },
+  "spurious_by_type": {
+   "PER": 20,
+   "COMP": 9,
+   "PROD": 4
+  },
+  "share_of_missed_gold": {
+   "wrong_type": 0.015,
+   "boundary": 0.045,
+   "boundary+type": 0.061,
+   "missed": 0.879
+  }
+ },
+ "l_llama70b/tweetner7": {
+  "gold": 475,
+  "pred": 507,
+  "exact_f1": 0.458,
+  "lenient_f1": 0.47,
+  "per_type": {
+   "COMP": {
+    "missed": 37,
+    "exact": 42,
+    "wrong_type": 3,
+    "boundary+type": 2
+   },
+   "PER": {
+    "missed": 89,
+    "boundary": 4,
+    "exact": 172,
+    "wrong_type": 9,
+    "boundary+type": 1
+   },
+   "PROD": {
+    "wrong_type": 66,
+    "boundary": 2,
+    "missed": 37,
+    "exact": 11
+   }
+  },
+  "spurious_by_type": {
+   "PROD": 38,
+   "COMP": 111,
+   "PER": 45
+  },
+  "share_of_missed_gold": {
+   "wrong_type": 0.312,
+   "boundary": 0.024,
+   "boundary+type": 0.012,
+   "missed": 0.652
+  }
+ },
+ "l_llama8b/fewnerd": {
+  "gold": 688,
+  "pred": 813,
+  "exact_f1": 0.532,
+  "lenient_f1": 0.586,
+  "per_type": {
+   "COMP": {
+    "missed": 24,
+    "exact": 54,
+    "boundary": 8,
+    "wrong_type": 7,
+    "boundary+type": 2
+   },
+   "PER": {
+    "exact": 289,
+    "missed": 158,
+    "boundary": 19,
+    "wrong_type": 4,
+    "boundary+type": 1
+   },
+   "PROD": {
+    "missed": 48,
+    "exact": 56,
+    "wrong_type": 2,
+    "boundary+type": 2,
+    "boundary": 14
+   }
+  },
+  "spurious_by_type": {
+   "PER": 55,
+   "COMP": 156,
+   "PROD": 142
+  },
+  "share_of_missed_gold": {
+   "wrong_type": 0.045,
+   "boundary": 0.142,
+   "boundary+type": 0.017,
+   "missed": 0.796
+  }
+ },
+ "l_llama8b/wnut17": {
+  "gold": 373,
+  "pred": 231,
+  "exact_f1": 0.444,
+  "lenient_f1": 0.474,
+  "per_type": {
+   "COMP": {
+    "missed": 33,
+    "exact": 8,
+    "boundary": 1,
+    "wrong_type": 1
+   },
+   "PER": {
+    "missed": 142,
+    "exact": 120,
+    "wrong_type": 5,
+    "boundary": 2,
+    "boundary+type": 1
+   },
+   "PROD": {
+    "missed": 45,
+    "exact": 6,
+    "boundary": 6,
+    "wrong_type": 2,
+    "boundary+type": 1
+   }
+  },
+  "spurious_by_type": {
+   "COMP": 16,
+   "PROD": 33,
+   "PER": 28
+  },
+  "share_of_missed_gold": {
+   "wrong_type": 0.033,
+   "boundary": 0.038,
+   "boundary+type": 0.008,
+   "missed": 0.921
+  }
+ },
+ "l_llama8b/tweetner7": {
+  "gold": 1323,
+  "pred": 879,
+  "exact_f1": 0.358,
+  "lenient_f1": 0.375,
+  "per_type": {
+   "COMP": {
+    "missed": 182,
+    "exact": 54,
+    "wrong_type": 13,
+    "boundary+type": 1,
+    "boundary": 1
+   },
+   "PER": {
+    "missed": 407,
+    "exact": 322,
+    "boundary": 11,
+    "wrong_type": 17,
+    "boundary+type": 4
+   },
+   "PROD": {
+    "missed": 248,
+    "boundary": 7,
+    "wrong_type": 35,
+    "exact": 18,
+    "boundary+type": 3
+   }
+  },
+  "spurious_by_type": {
+   "PROD": 140,
+   "PER": 103,
+   "COMP": 147
+  },
+  "share_of_missed_gold": {
+   "wrong_type": 0.07,
+   "boundary": 0.02,
+   "boundary+type": 0.009,
+   "missed": 0.901
+  }
+ }
+}
