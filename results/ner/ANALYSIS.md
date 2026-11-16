@@ -33,6 +33,8 @@ Llama 3.3 70B 0.636 / 0.620 / 0.458 on 300 sentences; Llama 3.1 8B 0.532 / 0.444
 **Ideas that did not help.** A DBpedia company dictionary (covers 18% to 39% of gold companies; the overall F1 never improves, section 5); a written guideline in the 8B prompt (the 6-shot baseline is best or tied, section 7); a bigger encoder on Few-NERD alone (0.831 vs 0.835, section 8).
 **Sparse sentences.** The paper's pattern (worse in sparse text) does not show up; instead GLiNER and the 8B LLM fire on sentences with nothing to find: 30 to 57 false positives per 100 such sentences for GLiNER, 55 to 60 for the 8B, against 7 to 12 for RoBERTa (section 6).
 
+**Voting and intervals (section 21).** Majority vote of the three seeds: 0.835 / 0.634 / 0.746 (mean 0.738); figure `confusion.png` shows what happens to each gold mention.
+
 **Boundary rules (section 20).** Cutting or adding "Inc." / "'s" on the predictions does not help (changes of −0.05 to 0).
 
 **Also run (sections 15 to 19).** Three seeds (std ≤ 0.004); CrossNER (persons transfer, organisations do not); a transformer on Linked-DocRED (0.900 vs CRF 0.771, own metric).
@@ -511,3 +513,44 @@ No rule improves any score; several lower it. Reasons, from the counts in `bound
 - The other rules touch 0 to 58 predictions.
 
 So the "Inc." / `'s` errors are not systematic enough to fix with a rule; they follow the annotation conventions of each dataset, and the models have already learned them. This matches section 13 (boundary errors are a minor part, and lenient F1 only gains +0.03 to +0.06): the remaining boundary errors are individual cases such as "TRS-80 computer" vs "TRS-80" in `error_examples.md`. Rules tested on predictions of one run per system; the Llama rows use the 300-sentence sample.
+
+## 21. Seeds voted, RoBERTa with the LLM, paired intervals, confusion matrix
+`extra_analysis.py` on saved predictions (CPU). Figure: `confusion.png`. Numbers: `extra_analysis.json`.
+
+**Majority vote over the three seeds** (a span is kept if at least 2 of 3 runs predict it, same span and type):
+
+| Test set | seed 13 / 14 / 15 | vote |
+|---|---|---|
+| Few-NERD | 0.824 / 0.825 / 0.826 | 0.835 |
+| WNUT-17 | 0.630 / 0.628 / 0.623 | 0.634 |
+| TweetNER7 | 0.733 / 0.732 / 0.729 | 0.746 |
+
+Voting gives +0.010 (Few-NERD) and +0.013 (TweetNER7) over seed 13, intervals [0.008, 0.012] and [0.008, 0.018]; on WNUT-17 +0.004, inside the noise. Three models cost three times as much, so this is an upper bound on what the single model can do, not a different method. Mean over the sets 0.738.
+
+**RoBERTa-large with Llama 70B**, on the 300 sentences per set where the LLM was scored (GLiNER predictions were not saved, so it is not included):
+
+| Test set | RoBERTa | Llama 70B | union | intersection |
+|---|---|---|---|---|
+| Few-NERD | 0.834 | 0.636 | 0.663 | 0.817 |
+| WNUT-17 | 0.624 | 0.620 | 0.642 | 0.592 |
+| TweetNER7 | 0.718 | 0.458 | 0.625 | 0.517 |
+
+Neither combination beats the trained model except the union on WNUT-17 (+0.018 on about 170 gold mentions, not significant). The LLM adds mostly wrong spans (union precision falls) and removes correct ones when intersected. On WNUT-17, where the trained model is weakest, the LLM finds about as many mentions (0.620 vs 0.624), but different ones, which is why the union gains a little.
+
+**Paired bootstrap** (difference in micro-F1, 95% interval, same sentences):
+
+| Comparison | Few-NERD | WNUT-17 | TweetNER7 |
+|---|---|---|---|
+| seed 14 − seed 13 | 0.000 [−0.002, 0.003] | −0.002 [−0.027, 0.019] | −0.001 [−0.008, 0.006] |
+| seed 15 − seed 13 | 0.002 [0.000, 0.004] | −0.007 [−0.034, 0.017] | −0.004 [−0.011, 0.002] |
+| vote − seed 13 | 0.010 [0.008, 0.012] | 0.004 [−0.017, 0.022] | 0.013 [0.008, 0.018] |
+| markup stripped − kept | 0.000 [−0.002, 0.003] | −0.019 [−0.043, 0.004] | **−0.047 [−0.056, −0.038]** |
+| media as COMP − normal | not comparable (different gold) | −0.009 [−0.027, 0.010] | 0.004 [−0.002, 0.010] |
+
+Two intervals exclude zero besides the vote: the markup effect on TweetNER7 (section 16) is real. The seed differences and the media-as-company changes on the tweet sets are not. These intervals resample sentences, not training runs, so they do not include training variance; section 15 gives that (std ≤ 0.004).
+
+**Confusion matrix** (`confusion.png`, RoBERTa-large all three, seed 13). Each gold mention is counted once: same span and predicted type (the three type columns), a prediction with other boundaries ("other span"), or no overlapping prediction ("missed"). The bottom row is the other way round: predictions that touch no gold mention, split by predicted type.
+- Persons are mostly right (83% to 90%); the rest is mostly "missed", only 1% to 3% are given another type.
+- Company and product are right in 68% / 69% on Few-NERD, 53% / 68% on TweetNER7 and only 44% / 29% on WNUT-17. The largest errors are "missed" (17% to 50%), then the confusion between the two (company → product 11% and product → company 8% on TweetNER7; 3% and 2% on Few-NERD).
+- Predictions with no gold mention are mostly PER on WNUT-17 (73%) and spread over the three types on Few-NERD and TweetNER7.
+So the main error of the best model is a mention it does not find at all, and the confusion between types is secondary, as sections 12 and 13 found from other angles.

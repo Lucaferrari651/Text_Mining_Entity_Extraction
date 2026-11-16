@@ -1,0 +1,291 @@
+{
+ "vote": {
+  "fewnerd": {
+   "seeds": [
+    0.824,
+    0.825,
+    0.826
+   ],
+   "majority_vote": 0.835
+  },
+  "wnut17": {
+   "seeds": [
+    0.63,
+    0.628,
+    0.623
+   ],
+   "majority_vote": 0.634
+  },
+  "tweetner7": {
+   "seeds": [
+    0.733,
+    0.732,
+    0.729
+   ],
+   "majority_vote": 0.746
+  }
+ },
+ "combine": {
+  "fewnerd": {
+   "roberta": 0.834,
+   "llama70b": 0.636,
+   "union": 0.663,
+   "intersection": 0.817
+  },
+  "wnut17": {
+   "roberta": 0.624,
+   "llama70b": 0.62,
+   "union": 0.642,
+   "intersection": 0.592
+  },
+  "tweetner7": {
+   "roberta": 0.718,
+   "llama70b": 0.458,
+   "union": 0.625,
+   "intersection": 0.517
+  }
+ },
+ "bootstrap": {
+  "fewnerd": {
+   "seed14 - seed13": {
+    "diff": 0.0,
+    "ci95": [
+     -0.002,
+     0.003
+    ]
+   },
+   "seed15 - seed13": {
+    "diff": 0.002,
+    "ci95": [
+     -0.0,
+     0.004
+    ]
+   },
+   "vote - seed13": {
+    "diff": 0.01,
+    "ci95": [
+     0.008,
+     0.012
+    ]
+   },
+   "markup stripped - kept": {
+    "diff": 0.0,
+    "ci95": [
+     -0.002,
+     0.003
+    ]
+   }
+  },
+  "wnut17": {
+   "seed14 - seed13": {
+    "diff": -0.002,
+    "ci95": [
+     -0.027,
+     0.019
+    ]
+   },
+   "seed15 - seed13": {
+    "diff": -0.007,
+    "ci95": [
+     -0.034,
+     0.017
+    ]
+   },
+   "vote - seed13": {
+    "diff": 0.004,
+    "ci95": [
+     -0.017,
+     0.022
+    ]
+   },
+   "markup stripped - kept": {
+    "diff": -0.019,
+    "ci95": [
+     -0.043,
+     0.004
+    ]
+   },
+   "media as COMP - normal": {
+    "diff": -0.009,
+    "ci95": [
+     -0.027,
+     0.01
+    ]
+   }
+  },
+  "tweetner7": {
+   "seed14 - seed13": {
+    "diff": -0.001,
+    "ci95": [
+     -0.008,
+     0.006
+    ]
+   },
+   "seed15 - seed13": {
+    "diff": -0.004,
+    "ci95": [
+     -0.011,
+     0.002
+    ]
+   },
+   "vote - seed13": {
+    "diff": 0.013,
+    "ci95": [
+     0.008,
+     0.018
+    ]
+   },
+   "markup stripped - kept": {
+    "diff": -0.047,
+    "ci95": [
+     -0.056,
+     -0.038
+    ]
+   },
+   "media as COMP - normal": {
+    "diff": 0.004,
+    "ci95": [
+     -0.002,
+     0.01
+    ]
+   }
+  }
+ },
+ "confusion": {
+  "fewnerd": {
+   "rows": [
+    "PER",
+    "COMP",
+    "PROD",
+    "none"
+   ],
+   "cols": [
+    "PER",
+    "COMP",
+    "PROD",
+    "other span",
+    "missed"
+   ],
+   "counts": [
+    [
+     19468,
+     96,
+     45,
+     789,
+     1181
+    ],
+    [
+     94,
+     2670,
+     113,
+     365,
+     661
+    ],
+    [
+     31,
+     143,
+     4290,
+     829,
+     939
+    ],
+    [
+     1585,
+     773,
+     975,
+     0,
+     0
+    ]
+   ]
+  },
+  "wnut17": {
+   "rows": [
+    "PER",
+    "COMP",
+    "PROD",
+    "none"
+   ],
+   "cols": [
+    "PER",
+    "COMP",
+    "PROD",
+    "other span",
+    "missed"
+   ],
+   "counts": [
+    [
+     337,
+     3,
+     4,
+     31,
+     54
+    ],
+    [
+     3,
+     29,
+     1,
+     3,
+     30
+    ],
+    [
+     4,
+     9,
+     37,
+     14,
+     63
+    ],
+    [
+     136,
+     28,
+     22,
+     0,
+     0
+    ]
+   ]
+  },
+  "tweetner7": {
+   "rows": [
+    "PER",
+    "COMP",
+    "PROD",
+    "none"
+   ],
+   "cols": [
+    "PER",
+    "COMP",
+    "PROD",
+    "other span",
+    "missed"
+   ],
+   "counts": [
+    [
+     2753,
+     93,
+     23,
+     123,
+     316
+    ],
+    [
+     30,
+     577,
+     117,
+     57,
+     310
+    ],
+    [
+     7,
+     92,
+     806,
+     48,
+     239
+    ],
+    [
+     366,
+     301,
+     249,
+     0,
+     0
+    ]
+   ]
+  }
+ }
+}

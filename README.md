@@ -35,6 +35,7 @@ Results and reading guide: `results/ner/ANALYSIS.md` (section 0 is the summary).
 | `merged_cp.py` | F1 with company and product merged into one type | no |
 | `analyze_boundaries.py` | missed / wrong type / boundary error counts and lenient F1 | no |
 | `boundary_rules.py` | rule-based boundary repair ("Inc.", "'s", "the") on saved predictions | no |
+| `extra_analysis.py` | seed vote, RoBERTa + LLM combination, paired bootstrap, confusion matrix figure (`results/ner/confusion.png`) | no |
 | `crf_media.py` | CRF on Few-NERD with and without media-as-company | no |
 | `error_examples.py` | real examples per error cause, written to `results/ner/error_examples.md` | no |
 | `review_sheet.py` | `make`: sheet of false positives for two human reviewers; `score`: agreement (Cohen's kappa) and F1 if the accepted ones were gold | no |

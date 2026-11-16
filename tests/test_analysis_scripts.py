@@ -44,3 +44,18 @@ def test_boundary_rules():
     doc = {"sents": toks, "entities": [{"type": "COMP", "mentions": [{"sent_id": 0, "pos": [0, 1]}]}]}
     r, _, _ = evaluate([doc], [[[0, 0, 2, "COMP"]]], ["suffix"])
     assert r["before"] == 0.0 and r["after"] == 1.0 and r["became_exact"] == 1
+
+
+def test_extra_analysis_helpers():
+    sys.path.insert(0, str(ROOT))
+    import numpy as np
+    from extra_analysis import vote, confusion, paired_boot
+    assert vote([{(0, 0, 1, "PER")}, {(0, 0, 1, "PER"), (0, 2, 3, "COMP")}, {(0, 2, 3, "COMP")}]) == {(0, 0, 1, "PER"), (0, 2, 3, "COMP")}
+    gold = [[(0, 0, 1, "COMP"), (0, 2, 3, "PROD"), (0, 4, 6, "PER"), (0, 8, 9, "PER")]]
+    pred = [[(0, 0, 1, "PROD"), (0, 2, 3, "PROD"), (0, 4, 5, "PER"), (0, 10, 11, "COMP")]]
+    rows, cols, M = confusion(gold, pred)
+    g = lambda r, c: M[rows.index(r), cols.index(c)]
+    assert g("COMP", "PROD") == 1 and g("PROD", "PROD") == 1 and g("PER", "other span") == 1 and g("PER", "missed") == 1 and g("none", "COMP") == 1
+    c = np.array([[1, 1, 1]] * 20)
+    d, ci = paired_boot(c, c, 50, np.random.default_rng(0))
+    assert d == 0 and ci == [0.0, 0.0]
