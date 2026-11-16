@@ -33,6 +33,8 @@ Llama 3.3 70B 0.636 / 0.620 / 0.458 on 300 sentences; Llama 3.1 8B 0.532 / 0.444
 **Ideas that did not help.** A DBpedia company dictionary (covers 18% to 39% of gold companies; the overall F1 never improves, section 5); a written guideline in the 8B prompt (the 6-shot baseline is best or tied, section 7); a bigger encoder on Few-NERD alone (0.831 vs 0.835, section 8).
 **Sparse sentences.** The paper's pattern (worse in sparse text) does not show up; instead GLiNER and the 8B LLM fire on sentences with nothing to find: 30 to 57 false positives per 100 such sentences for GLiNER, 55 to 60 for the 8B, against 7 to 12 for RoBERTa (section 6).
 
+**Boundary rules (section 20).** Cutting or adding "Inc." / "'s" on the predictions does not help (changes of −0.05 to 0).
+
 **Also run (sections 15 to 19).** Three seeds (std ≤ 0.004); CrossNER (persons transfer, organisations do not); a transformer on Linked-DocRED (0.900 vs CRF 0.771, own metric).
 
 **Not done / open.** Seeds for the other systems (single run), the full Few-NERD training set, DFKI as extra test, a manual review of the false positives
@@ -491,3 +493,21 @@ Persons transfer (0.93 to 0.96 everywhere). ORG is near zero in politics, music 
 | MISC | 0.55 | 0.803 |
 
 The CRF is far below a transformer on this data (+0.13); the paper's PURE reports 77.2 on its own metric, so the CRF was close to the paper and the transformer is clearly above it. Dev split only, one run, our metric (not the paper's scorer), so we do not claim to beat the paper.
+
+## 20. Repairing boundaries with rules ("Inc.", "'s", leading "the")
+`boundary_rules.py` edits the saved predictions and re-scores (no GPU). Rules: cut a final legal-form token (Inc, Ltd, Corp...), cut a final `'s`, cut a leading "the"; and the opposite direction, add a following "Inc."/`'s`. Test sets, exact span and type, micro-F1 before → after.
+
+| Run / test set | cut suffix | cut `'s` | cut "the" | add suffix | add `'s` |
+|---|---|---|---|---|---|
+| RoBERTa-large all three / Few-NERD | 0.824 → 0.814 | 0.824 → 0.824 | 0.824 → 0.824 | 0.824 → 0.824 | 0.824 → 0.779 |
+| same / WNUT-17 | 0.630 → 0.628 | 0.630 → 0.630 | 0.630 → 0.630 | 0.630 → 0.630 | 0.630 → 0.592 |
+| same / TweetNER7 | 0.733 → 0.732 | 0.733 → 0.733 | 0.733 → 0.732 | 0.733 → 0.733 | 0.733 → 0.711 |
+| Llama 70B / Few-NERD (300 sent.) | 0.636 → 0.633 | 0.636 → 0.636 | 0.636 → 0.636 | 0.636 → 0.636 | 0.636 → 0.583 |
+
+No rule improves any score; several lower it. Reasons, from the counts in `boundary_rules.json`:
+- In Few-NERD 358 gold company spans end in a legal-form token, so the annotators keep "Inc." in the name. Cutting it changed 489 predictions, of which 344 were exact before and only 21 became exact (−0.010).
+- The opposite rule almost never fires (6 predictions in Few-NERD): the model already includes "Inc." when the gold does.
+- Adding `'s` changes 1,937 predictions in Few-NERD, 1,516 of them correct before, and 77 become correct: the gold excludes the possessive almost always.
+- The other rules touch 0 to 58 predictions.
+
+So the "Inc." / `'s` errors are not systematic enough to fix with a rule; they follow the annotation conventions of each dataset, and the models have already learned them. This matches section 13 (boundary errors are a minor part, and lenient F1 only gains +0.03 to +0.06): the remaining boundary errors are individual cases such as "TRS-80 computer" vs "TRS-80" in `error_examples.md`. Rules tested on predictions of one run per system; the Llama rows use the 300-sentence sample.

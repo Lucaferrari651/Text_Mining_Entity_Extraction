@@ -30,3 +30,17 @@ def test_boundaries_runs(tmp_path):
     data, runs = _fake(tmp_path, [[0, 0, 1, "COMP"], [0, 2, 3, "PROD"]])
     r = _run("analyze_boundaries.py", data, runs, tmp_path / "b.json")
     assert r  # produced a result for the run
+
+
+def test_boundary_rules():
+    sys.path.insert(0, str(ROOT))
+    from boundary_rules import trim, evaluate
+    toks = [["Apple", "Inc.", "makes", "the", "iPhone", "'s", "case"]]
+    assert trim((0, 0, 2, "COMP"), toks, "suffix") == (0, 0, 1, "COMP")      # drops "Inc."
+    assert trim((0, 0, 1, "COMP"), toks, "suffix") == (0, 0, 1, "COMP")      # never empties a span
+    assert trim((0, 3, 5, "PROD"), toks, "article") == (0, 4, 5, "PROD")     # drops "the"
+    assert trim((0, 4, 6, "PROD"), toks, "possessive") == (0, 4, 5, "PROD")
+    assert trim((0, 0, 1, "COMP"), toks, "ext_suffix") == (0, 0, 2, "COMP")
+    doc = {"sents": toks, "entities": [{"type": "COMP", "mentions": [{"sent_id": 0, "pos": [0, 1]}]}]}
+    r, _, _ = evaluate([doc], [[[0, 0, 2, "COMP"]]], ["suffix"])
+    assert r["before"] == 0.0 and r["after"] == 1.0 and r["became_exact"] == 1

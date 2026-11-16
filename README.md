@@ -34,6 +34,7 @@ Results and reading guide: `results/ner/ANALYSIS.md` (section 0 is the summary).
 | `bootstrap_llm.py` | paired bootstrap intervals, Llama 70B vs 8B on the same sentences | no |
 | `merged_cp.py` | F1 with company and product merged into one type | no |
 | `analyze_boundaries.py` | missed / wrong type / boundary error counts and lenient F1 | no |
+| `boundary_rules.py` | rule-based boundary repair ("Inc.", "'s", "the") on saved predictions | no |
 | `crf_media.py` | CRF on Few-NERD with and without media-as-company | no |
 | `error_examples.py` | real examples per error cause, written to `results/ner/error_examples.md` | no |
 | `review_sheet.py` | `make`: sheet of false positives for two human reviewers; `score`: agreement (Cohen's kappa) and F1 if the accepted ones were gold | no |
