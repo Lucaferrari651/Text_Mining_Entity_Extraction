@@ -15,7 +15,7 @@ Task: mark every person (PER), company (COMP) and product (PROD) in a sentence. 
 | WNUT-17 | RoBERTa-large, WNUT-17 only | 0.636 | the large model trained on all three sets: 0.630, a difference far inside the interval (±0.035) |
 | TweetNER7 | RoBERTa-large, all three sets | 0.733 | base model on all three sets 0.719; Few-NERD-only base model 0.375 |
 
-Best single model for the three sets: **RoBERTa-large trained on all three** (0.824 / 0.630 / 0.733, mean 0.729). Without training on the target sets: GLiNER (threshold 0.8) 0.632 / 0.446 / 0.508;
+Best single model for the three sets: **RoBERTa-large trained on all three** (3 seeds: 0.825 / 0.627 / 0.731, mean 0.728; seed std ≤ 0.004, section 15). Without training on the target sets: GLiNER (threshold 0.8) 0.632 / 0.446 / 0.508;
 Llama 3.3 70B 0.636 / 0.620 / 0.458 on 300 sentences; Llama 3.1 8B 0.532 / 0.444 / 0.358 on 800 sentences. The 70B is better than the 8B on the same sentences (section 9), but its samples are small and it is not ranked against the trained models.
 
 **What explains the errors (measured).**
@@ -23,17 +23,19 @@ Llama 3.3 70B 0.636 / 0.620 / 0.458 on 300 sentences; Llama 3.1 8B 0.532 / 0.444
 | Cause | Evidence | Section |
 |---|---|---|
 | Different text domain and label definitions | the Few-NERD-only RoBERTa-base gets 0.835 on Few-NERD and 0.375 on TweetNER7; adding the tweet sets brings TweetNER7 to 0.719 | 2, 8 |
-| `{@name@}` markup in TweetNER7 | 65% of product and 43% of company mentions in the test set; stripping it lifts the Few-NERD-trained RoBERTa-base from 0.380 to 0.545 (+0.165, interval [0.152, 0.178]); the CRF gains 0.10 | 2, 9, 10 |
+| `{@name@}` markup in TweetNER7 | 65% of product and 43% of company mentions in the test set; stripping it lifts the Few-NERD-trained RoBERTa-base from 0.380 to 0.545 (+0.165, interval [0.152, 0.178]), but **lowers** the tweet-trained RoBERTa-large (0.733 → 0.686) | 2, 9, 10, 16 |
 | Names never seen | 98% of the gold company and product strings of WNUT-17 are not in its training set | 2, error_examples.md |
 | Not found at all | 53% to 67% of the unmatched gold mentions (large model), 80% to 94% for the Wikipedia-trained base model on tweets | 13 |
 | Boundaries | counting overlapping right-type predictions as correct adds only +0.03 to +0.06 | 13 |
 | Company vs product label | merging the two adds +0.01 to +0.04 for trained models, +0.14 for the 70B on TweetNER7 | 12 |
-| Media organisations are OTHER in Few-NERD | examples in `error_examples.md`; CRF test: company F1 +0.05, overall F1 unchanged | 14 |
+| Media organisations are OTHER in Few-NERD | examples in `error_examples.md`; company F1 +0.05 (CRF) / +0.02 (RoBERTa-large), overall F1 unchanged | 14, 17 |
 
 **Ideas that did not help.** A DBpedia company dictionary (covers 18% to 39% of gold companies; the overall F1 never improves, section 5); a written guideline in the 8B prompt (the 6-shot baseline is best or tied, section 7); a bigger encoder on Few-NERD alone (0.831 vs 0.835, section 8).
 **Sparse sentences.** The paper's pattern (worse in sparse text) does not show up; instead GLiNER and the 8B LLM fire on sentences with nothing to find: 30 to 57 false positives per 100 such sentences for GLiNER, 55 to 60 for the 8B, against 7 to 12 for RoBERTa (section 6).
 
-**Not done / open.** More seeds (single seed everywhere), the markup-stripped version of the large model, the full Few-NERD training set, CrossNER and DFKI as extra tests, a manual review of the false positives
+**Also run (sections 15 to 19).** Three seeds (std ≤ 0.004); CrossNER (persons transfer, organisations do not); a transformer on Linked-DocRED (0.900 vs CRF 0.771, own metric).
+
+**Not done / open.** Seeds for the other systems (single run), the full Few-NERD training set, DFKI as extra test, a manual review of the false positives
 (`review_sheet.csv`, instructions in `review_instructions.md`), a transformer on Linked-DocRED to compare with the paper's 77.2 (our CRF: 0.771, own metric).
 
 **Files.** Scripts: `ner_unified.py` (training, `--strip-markup`, `--media-as-comp`), `bootstrap_llm.py`, `merged_cp.py`, `analyze_boundaries.py`, `strip_markup_eval.py`, `crf_media.py`,
@@ -428,3 +430,64 @@ Few-NERD labels newspapers, TV and radio stations as `organization-media/newspap
 
 Reading: with the broader company definition the company score rises by 0.048, and the overall score is unchanged (0.656 vs 0.652). The two rows are two label definitions, not one model beating another, and a CRF is not the transformer. So the definition of "company" moves the company score by about 5 points but not the total, because the extra gold mentions add as many misses as hits. The RoBERTa version of this test is in the Colab notebook (block 3) and is not run yet.
 Single run, no interval.
+
+## 15. Three seeds of RoBERTa-large trained on all three sets
+Seeds 13 (section 11), 14 and 15, same settings (30,000 Few-NERD sentences, 2 epochs, lr 2e-5, batch 16). Runs `s_all_rl`, `s_all_rl_seed14`, `s_all_rl_seed15`.
+
+| Seed | Few-NERD | WNUT-17 | TweetNER7 |
+|---|---|---|---|
+| 13 | 0.824 | 0.630 | 0.733 |
+| 14 | 0.825 | 0.628 | 0.732 |
+| 15 | 0.826 | 0.623 | 0.729 |
+| mean (std) | 0.825 (0.001) | 0.627 (0.004) | 0.731 (0.002) |
+
+The seed changes the score by at most 0.007 (WNUT-17), far less than the differences between systems (e.g. 0.731 vs 0.375 on TweetNER7 for the Few-NERD-only base model). Differences of 0.005 or less between two single runs elsewhere in this file are inside this noise. Mean over the three sets: 0.728.
+
+## 16. Strip the markup, RoBERTa-large trained on all three sets
+Run `s_all_rl_strip` (seed 13): `{@Name@}` expanded in train, validation and test, all three sets.
+
+| Test set | markup kept (seed 13) | markup stripped |
+|---|---|---|
+| Few-NERD | 0.824 | 0.825 |
+| WNUT-17 | 0.630 | 0.611 |
+| TweetNER7 | 0.733 | 0.686 |
+
+Stripping **lowers** the score of a model that was trained on tweets (TweetNER7 −0.047, WNUT-17 −0.019). It is the opposite of section 10 (Few-NERD-trained model, +0.165). Reading: the markup is a problem for a model that never saw it, but it also carries information (a `{@...@}` token is a mention of a person, company or product almost by itself), which a tweet-trained model uses. The CRF showed the same sign (section 9). So the markup explains the Wikipedia-to-tweets drop, but not the gap of the best model, and removing it is not a general improvement. Single seed; the TweetNER7 change is 20 times the seed std.
+
+## 17. Media organisations as company, RoBERTa-large
+Run `s_all_rl_media`: media organisations (BBC, NBC...) are COMP in train, validation and test (Few-NERD test COMP 3,903 → 5,137). Compare with section 11 and 15.
+
+| Test set | normal (3 seeds) | media as COMP |
+|---|---|---|
+| Few-NERD, ALL | 0.825 | 0.823 |
+| Few-NERD, COMP | 0.670 to 0.673 | 0.695 |
+| WNUT-17 | 0.627 | 0.621 |
+| TweetNER7 | 0.731 | 0.737 |
+
+Same result as the CRF (section 14): the company score on Few-NERD rises by about 0.02 and the overall score does not move. The WNUT-17 and TweetNER7 test sets are unchanged by the option, so their differences (−0.006, +0.006) are training effects of the same size as seed noise. Company and overall F1 are measured against two different gold definitions on Few-NERD, so this is about the definition, not an improvement of the model.
+
+## 18. CrossNER (other domains, labels PER / ORG / PROD)
+Run `s_all_rl_cross`: the same model as section 11, tested on the five CrossNER domains; our COMP predictions count as ORG, scored on PER+ORG+PROD (`--b2nerd-dir`).
+
+| Domain | micro F1 | P | R | PER | ORG | PROD |
+|---|---|---|---|---|---|---|
+| AI | 0.658 | 0.706 | 0.616 | 0.956 | 0.389 | 0.493 |
+| Literature | 0.891 | 0.927 | 0.858 | 0.952 | 0.220 | 0.000 |
+| Music | 0.607 | 0.887 | 0.461 | 0.930 | 0.049 | 0.000 |
+| Politics | 0.512 | 0.945 | 0.351 | 0.958 | 0.008 | 0.000 |
+| Science | 0.739 | 0.922 | 0.617 | 0.962 | 0.020 | 0.000 |
+
+Persons transfer (0.93 to 0.96 everywhere). ORG is near zero in politics, music and science and PROD is 0 outside AI: precision stays high (0.89 to 0.95) and recall is low, which is the label-definition effect of section 2 (CrossNER "organization" includes parties, bands, universities, which Few-NERD company does not). The high literature micro F1 comes from persons dominating that set, not from better organisations. These scores should not be compared with the Few-NERD/WNUT/Tweet scores.
+
+## 19. A transformer on Linked-DocRED (dev)
+`roberta_ldred_metrics.json`: RoBERTa trained on the Linked-DocRED NER annotation, same own mention-level metric as our CRF (section on the pipeline in README).
+
+| Type | CRF | RoBERTa |
+|---|---|---|
+| ALL | 0.771 | 0.900 |
+| PER | 0.81 | 0.953 |
+| LOC | 0.81 | 0.926 |
+| ORG | 0.65 | 0.844 |
+| MISC | 0.55 | 0.803 |
+
+The CRF is far below a transformer on this data (+0.13); the paper's PURE reports 77.2 on its own metric, so the CRF was close to the paper and the transformer is clearly above it. Dev split only, one run, our metric (not the paper's scorer), so we do not claim to beat the paper.
