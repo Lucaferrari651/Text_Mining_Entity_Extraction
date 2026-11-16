@@ -535,7 +535,7 @@ Voting gives +0.010 (Few-NERD) and +0.013 (TweetNER7) over seed 13, intervals [0
 | WNUT-17 | 0.624 | 0.620 | 0.642 | 0.592 |
 | TweetNER7 | 0.718 | 0.458 | 0.625 | 0.517 |
 
-Neither combination beats the trained model except the union on WNUT-17 (+0.018 on about 170 gold mentions, not significant). The LLM adds mostly wrong spans (union precision falls) and removes correct ones when intersected. On WNUT-17, where the trained model is weakest, the LLM finds about as many mentions (0.620 vs 0.624), but different ones, which is why the union gains a little.
+Neither combination beats the trained model except the union on WNUT-17 (+0.018 on a 300-sentence sample, not tested for significance). On WNUT-17, where the trained model is weakest, the LLM scores about the same (0.620 vs 0.624), and the union gains a little, so on this set the two systems find partly different mentions; on the other two sets the LLM is far worse and the union is worse than RoBERTa alone.
 
 **Paired bootstrap** (difference in micro-F1, 95% interval, same sentences):
 
@@ -550,7 +550,7 @@ Neither combination beats the trained model except the union on WNUT-17 (+0.018 
 Two intervals exclude zero besides the vote: the markup effect on TweetNER7 (section 16) is real. The seed differences and the media-as-company changes on the tweet sets are not. These intervals resample sentences, not training runs, so they do not include training variance; section 15 gives that (std ≤ 0.004).
 
 **Confusion matrix** (`confusion.png`, RoBERTa-large all three, seed 13). Each gold mention is counted once: same span and predicted type (the three type columns), a prediction with other boundaries ("other span"), or no overlapping prediction ("missed"). The bottom row is the other way round: predictions that touch no gold mention, split by predicted type.
-- Persons are mostly right (83% to 90%); the rest is mostly "missed", only 1% to 3% are given another type.
+- Persons are mostly right (83% to 90%); the rest is mostly "missed" or other boundaries; at most 3% are given another type.
 - Company and product are right in 68% / 69% on Few-NERD, 53% / 68% on TweetNER7 and only 44% / 29% on WNUT-17. The largest errors are "missed" (17% to 50%), then the confusion between the two (company → product 11% and product → company 8% on TweetNER7; 3% and 2% on Few-NERD).
 - Predictions with no gold mention are mostly PER on WNUT-17 (73%) and spread over the three types on Few-NERD and TweetNER7.
 So the main error of the best model is a mention it does not find at all, and the confusion between types is secondary, as sections 12 and 13 found from other angles.
