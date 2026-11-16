@@ -49,6 +49,7 @@ The no-GPU scripts read saved predictions (`results/ner/runs/<run>/preds_<set>.j
 | Coreference, gold mentions | B3 F1 0.951, entity F1 0.871 |
 | Linking, gold entities, alias dictionary + fuzzy | Hit@1 0.289, Hit@5 0.323 |
 | End to end (NER + coref + linking) | 0.220 of linkable entities found and linked at rank 1 |
+| Linking, gold entities, Wikidata search (probability-sum) | Hit@1 0.576, Hit@5 0.722 (predicted entities: 0.457 / 0.562); `results/wiki_metrics.json`, ANALYSIS.md section 22 |
 
 The Wikipedia/Wikidata search linker (the one used in the paper) is evaluated with `fetch_wiki_candidates.py`
 and `run_wiki_eval.py`; results will be added here.

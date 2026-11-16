@@ -554,3 +554,22 @@ Two intervals exclude zero besides the vote: the markup effect on TweetNER7 (sec
 - Company and product are right in 68% / 69% on Few-NERD, 53% / 68% on TweetNER7 and only 44% / 29% on WNUT-17. The largest errors are "missed" (17% to 50%), then the confusion between the two (company → product 11% and product → company 8% on TweetNER7; 3% and 2% on Few-NERD).
 - Predictions with no gold mention are mostly PER on WNUT-17 (73%) and spread over the three types on Few-NERD and TweetNER7.
 So the main error of the best model is a mention it does not find at all, and the confusion between types is secondary, as sections 12 and 13 found from other angles.
+
+## 22. Linking with Wikipedia and Wikidata search (Linked-DocRED dev)
+`fetch_wiki_candidates.py` queried Wikipedia and Wikidata search for the 14,388 distinct mention strings of the dev set (10% got no candidate at all); `run_wiki_eval.py` evaluates the ranking offline. Result file: `results/wiki_metrics.json`. 13,856 gold linkable entities. Part A uses the gold entities (linking quality alone); part B uses the entities of our own pipeline (CRF mentions + rule coreference).
+
+| Linker | A Hit@1 | A Hit@5 | A not found | B Hit@1 | B Hit@5 | B not found |
+|---|---|---|---|---|---|---|
+| Alias dictionary + fuzzy (README) | 0.289 | 0.323 | 0.674 | – | – | – |
+| Wikipedia search, rank-sum (paper) | 0.527 | 0.628 | 0.328 | 0.440 | 0.507 | 0.476 |
+| Wikipedia search, probability-sum | 0.543 | 0.656 | 0.328 | 0.440 | 0.513 | 0.476 |
+| Wikidata search, rank-sum (paper) | 0.564 | 0.691 | 0.253 | 0.454 | 0.547 | 0.421 |
+| Wikidata search, probability-sum | **0.576** | **0.722** | 0.253 | **0.457** | **0.562** | 0.421 |
+| Wikipedia search + dictionary | 0.464 | 0.698 | 0.254 | 0.394 | 0.569 | 0.405 |
+
+Reading:
+- Search is far better than the dictionary alone (Hit@1 0.29 → 0.53 to 0.58), because the dictionary only knows entities seen in training.
+- Wikidata search beats Wikipedia search by about 0.02 to 0.04 Hit@1 and finds a candidate more often (not found 0.253 vs 0.328). Our probability-sum aggregation is slightly above the paper's rank-sum rule (+0.012 on Wikidata, gold entities).
+- Adding the dictionary to the Wikipedia search lowers Hit@1 (0.543 → 0.464) but raises Hit@5 (0.656 → 0.698): it finds more candidates but ranks them worse.
+- With predicted entities all scores fall (Wikidata Hit@1 0.564 → 0.454 with the paper's rule); the loss is the errors of the first two stages (mentions and coreference).
+- The paper reports a Wikidata Hit@1 of 51.1. Our value with its rule is 0.564 on gold entities and 0.454 on predicted entities, so it brackets that figure, but we did not check which entities and which setting that number refers to, so this is a plausibility check, not a reproduction. One run, one cache queried on the same day; Wikipedia search results change over time.
